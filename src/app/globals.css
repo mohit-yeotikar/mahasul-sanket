@@ -1,0 +1,127 @@
+@import "tailwindcss";
+
+/* ── Mahasul Sanket design tokens ─────────────────────────────
+   Farmer-first green theme: deep agricultural green primary,
+   leaf-green tints, saffron reserved for alerts/escalation. */
+:root {
+  --background: #f6f8f5;
+  --surface: #ffffff;
+  --surface-2: #ecf2ea;
+  --foreground: #16241a;
+  --muted: #5c6b60;
+  --border: #d9e2d8;
+
+  --primary: #1a5c38;         /* deep agricultural green */
+  --primary-hover: #124228;
+  --primary-fg: #ffffff;
+  --secondary: #3f9464;       /* leaf green */
+  --secondary-fg: #ffffff;
+  --accent: #e07b00;          /* saffron — alerts & escalation only */
+  --accent-soft: #fff3e2;
+  --danger: #b3261e;
+  --success: #1a5c38;
+  --warning: #9a6700;
+
+  --radius: 0.75rem;
+}
+
+html.dark {
+  --background: #0e1712;
+  --surface: #16241b;
+  --surface-2: #1d2f23;
+  --foreground: #e6efe8;
+  --muted: #93a698;
+  --border: #2b4133;
+
+  --primary: #4fae7c;
+  --primary-hover: #66c091;
+  --primary-fg: #0e1712;
+  --secondary: #3f9464;
+  --secondary-fg: #0e1712;
+  --accent: #f0913a;
+  --accent-soft: #33240f;
+  --danger: #e5675f;
+  --success: #4fae7c;
+  --warning: #d9a648;
+}
+
+/* High-contrast mode (accessibility) */
+html.hc {
+  --background: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #ffffff;
+  --foreground: #000000;
+  --muted: #1a1a1a;
+  --border: #000000;
+  --primary: #00297a;
+  --primary-fg: #ffffff;
+}
+html.hc.dark {
+  --background: #000000;
+  --surface: #000000;
+  --surface-2: #000000;
+  --foreground: #ffffff;
+  --muted: #e6e6e6;
+  --border: #ffffff;
+  --primary: #ffd75e;
+  --primary-fg: #000000;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-fg: var(--primary-fg);
+  --color-secondary: var(--secondary);
+  --color-secondary-fg: var(--secondary-fg);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --font-sans: "Nirmala UI", "Kohinoor Devanagari", "Noto Sans Devanagari", "Mangal", var(--font-geist-sans), system-ui, sans-serif;
+  --radius-lg: var(--radius);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  /* Use the OS's native Devanagari font, which shapes the ष्ट्र conjunct
+     correctly: Nirmala UI (Windows), Kohinoor Devanagari (macOS/iOS),
+     system Noto Sans Devanagari (Android/Linux — the FULL font, unlike the
+     mis-shaping Google-subsetted webfont we removed). */
+  font-family: "Nirmala UI", "Kohinoor Devanagari", "Noto Sans Devanagari",
+    "Mangal", var(--font-geist-sans), system-ui, sans-serif;
+  /* Marathi (Devanagari) needs taller line-height to avoid matra clipping */
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ── Devanagari-safe line heights ──────────────────────────────
+   Stacked conjuncts (ष्ट्र in महाराष्ट्र, द्ध, क्त्र…) and below-base
+   matras extend past the Latin em box. Tailwind's default tight
+   leadings clip them — enforce taller line boxes everywhere. */
+.text-xs  { line-height: 1.45 !important; }
+.text-sm  { line-height: 1.6 !important; }
+.text-base { line-height: 1.65 !important; }
+.text-lg  { line-height: 1.6 !important; }
+.text-xl, .text-2xl { line-height: 1.5 !important; }
+.text-3xl { line-height: 1.4 !important; }
+h1, h2, h3, h4, h5, h6 { line-height: 1.45; }
+/* truncation crops vertically too when the line box is tight */
+.truncate, [class*="line-clamp"] { line-height: 1.6; }
+
+::selection { background: var(--accent); color: #fff; }
+
+/* Large tap targets for field usage */
+button, [role="button"], input, select, textarea { min-height: 2.5rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
