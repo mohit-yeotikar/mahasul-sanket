@@ -133,6 +133,8 @@ export function useSpeech(lang: Lang) {
     } catch {
       recordingRef.current = false;
       stopTracks();
+      setError("not-allowed"); // mic permission denied
+      setListening(false);
     }
   }, [stopTracks]);
 
@@ -184,20 +186,21 @@ export function useSpeech(lang: Lang) {
     setTranscribing(false);
     setTranscript("");
 
-    // Marathi: record for Whisper (accurate). Browser recognizer runs too, for
-    // a live preview + as fallback. English: browser recognizer only.
-    if (lang === "mr") void startRecording();
-
-    const rec = buildRecognizer(SPEECH_LANG[lang]);
-    if (rec) {
-      recRef.current = rec;
-      wantListeningRef.current = true;
-      try { rec.start(); } catch {}
+    // Marathi: record and transcribe with Whisper (Groq) only — far more
+    // accurate than browser recognition, which mis-hears Marathi as Hindi.
+    // Text appears when the user turns the mic off (a voice-note flow).
+    if (lang === "mr") {
+      void startRecording();
+      setListening(true);
+      return;
     }
 
-    // "Listening" is true if either capture path is active.
-    if (rec || recordingRef.current) setListening(true);
-    else setError("unknown");
+    // English: browser recognition (real-time and already accurate).
+    const rec = buildRecognizer(SPEECH_LANG[lang]);
+    if (!rec) { setError("unknown"); return; }
+    recRef.current = rec;
+    wantListeningRef.current = true;
+    try { rec.start(); setListening(true); } catch { setListening(true); }
   }, [lang, buildRecognizer, startRecording]);
 
   const stopListening = useCallback(() => {
