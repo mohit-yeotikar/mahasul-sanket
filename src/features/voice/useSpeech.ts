@@ -1,9 +1,9 @@
 "use client";
 
-// Voice INPUT (dictation). Marathi uses Groq's hosted Whisper (large-v3) for
-// accuracy, with the browser's Web Speech API running alongside for an instant
-// live preview AND as a fallback if Whisper is unavailable. English uses Web
-// Speech only (already good, and instant). No speech OUTPUT / read-aloud.
+// Voice INPUT (dictation). Marathi = "live Whisper": one continuous recording is
+// re-transcribed through Groq's Whisper every ~2.5s, so accurate Marathi text
+// appears and grows AS YOU SPEAK, with a final pass on stop. English uses the
+// browser recognizer (already real-time + accurate). No speech OUTPUT.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Lang } from "@/lib/i18n/dictionaries";
@@ -14,8 +14,8 @@ const SPEECH_LANG: Record<Lang | "hi", string> = {
   en: "en-IN",
 };
 
-// Groq Whisper transcription (server route). Used for Marathi.
-const STT_ENDPOINT = "/api/voice/stt";
+const STT_ENDPOINT = "/api/voice/stt";      // Groq Whisper (server route)
+const LIVE_INTERVAL_MS = 2500;              // how often to re-transcribe while speaking
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SR = any;
@@ -30,31 +30,35 @@ export type SpeechError =
 
 export function useSpeech(lang: Lang) {
   const [listening, setListening] = useState(false);
-  const [transcribing, setTranscribing] = useState(false); // Whisper in progress
+  const [transcribing, setTranscribing] = useState(false); // final Whisper pass
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<SpeechError>(null);
   const [supported, setSupported] = useState({ stt: false });
 
+  // Browser recognizer (English).
   const recRef = useRef<SR | null>(null);
-  const finalRef = useRef("");            // committed (final) browser text this session
-  const triedFallbackRef = useRef(false); // mr-IN -> hi-IN one-time fallback
-  const wantListeningRef = useRef(false);  // user intends to keep listening
+  const finalRef = useRef("");
+  const triedFallbackRef = useRef(false);
+  const wantListeningRef = useRef(false);
 
-  // Recording for Whisper (Marathi).
+  // Live Whisper recording (Marathi).
   const mediaRecRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const mediaChunksRef = useRef<Blob[]>([]);
   const recordingRef = useRef(false);
-  const sttRunRef = useRef(0);
+  const sttRunRef = useRef(0);              // cancels stale dictations/requests
+  const liveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const inFlightRef = useRef(false);        // one live request at a time
+  const lastSizeRef = useRef(0);            // only apply results from ever-longer audio
 
   useEffect(() => {
     const w = window as unknown as { SpeechRecognition?: SR; webkitSpeechRecognition?: SR };
-    // stt is "supported" if EITHER the browser recognizer OR mic recording works.
     const hasRec = !!(w.SpeechRecognition || w.webkitSpeechRecognition);
     const hasMedia = typeof MediaRecorder !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
     setSupported({ stt: hasRec || hasMedia });
   }, []);
 
+  // ── browser recognizer (English) ──
   const buildRecognizer = useCallback(function createRecognizer(recLang: string) {
     const w = window as unknown as { SpeechRecognition?: SR; webkitSpeechRecognition?: SR };
     const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
@@ -76,31 +80,15 @@ export function useSpeech(lang: Lang) {
 
     rec.onerror = (ev: SR) => {
       const code = ev?.error as string;
-      // Marathi recognition is not available in every Chrome build. Try Hindi
-      // once because it is Devanagari-friendly and usually available.
-      if (code === "language-not-supported" && lang === "mr" && !triedFallbackRef.current) {
-        triedFallbackRef.current = true;
-        wantListeningRef.current = false;
-        try { rec.stop(); } catch {}
-        const fb = createRecognizer("hi-IN");
-        if (fb) {
-          recRef.current = fb;
-          wantListeningRef.current = true;
-          try { fb.start(); return; } catch {}
-        }
-      }
-      // These are non-fatal when Whisper is also recording — don't surface them.
-      if (code === "no-speech" && recordingRef.current) { return; }
-      if (code === "not-allowed" || code === "service-not-allowed") setError("not-allowed");
-      else if (code === "no-speech") setError("no-speech");
+      if (code === "no-speech") setError("no-speech");
+      else if (code === "not-allowed" || code === "service-not-allowed") setError("not-allowed");
       else if (code === "language-not-supported") setError("language");
       else if (code === "network") setError("network");
-      else if (code === "aborted") { /* user stopped; not an error */ }
+      else if (code === "aborted") { /* user stopped */ }
       else setError("unknown");
     };
 
     rec.onend = () => {
-      // Chrome auto-stops after a pause; restart if the user still wants to talk.
       if (recRef.current === rec && wantListeningRef.current) {
         try { rec.start(); return; } catch {}
       }
@@ -108,18 +96,41 @@ export function useSpeech(lang: Lang) {
     };
 
     return rec;
-  }, [lang]);
+  }, []);
 
+  // ── live Whisper (Marathi) ──
   const stopTracks = useCallback(() => {
     mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
     mediaStreamRef.current = null;
   }, []);
 
-  // Record audio for Whisper, alongside the browser recognizer.
+  const clearLiveTimer = useCallback(() => {
+    if (liveTimerRef.current) { clearInterval(liveTimerRef.current); liveTimerRef.current = null; }
+  }, []);
+
+  const transcribeBlob = useCallback(async (blob: Blob, langCode: string): Promise<string | null> => {
+    try {
+      const fd = new FormData();
+      fd.append("audio", blob, "speech.webm");
+      fd.append("lang", langCode);
+      const res = await fetch(STT_ENDPOINT, { method: "POST", body: fd });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return String(data?.text ?? "").trim();
+    } catch {
+      return null;
+    }
+  }, []);
+
   const startRecording = useCallback(async () => {
-    if (typeof MediaRecorder === "undefined" || !navigator.mediaDevices?.getUserMedia) return;
+    if (typeof MediaRecorder === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      setError("unknown"); setListening(false); return;
+    }
+    const runId = sttRunRef.current;                      // set by startListening
+    const langCode = SPEECH_LANG[lang].split("-")[0];     // mr | en
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (sttRunRef.current !== runId) { stream.getTracks().forEach((t) => t.stop()); return; }
       mediaStreamRef.current = stream;
       mediaChunksRef.current = [];
       const mime = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus"].find(
@@ -129,79 +140,90 @@ export function useSpeech(lang: Lang) {
       mr.ondataavailable = (e) => { if (e.data?.size) mediaChunksRef.current.push(e.data); };
       mediaRecRef.current = mr;
       recordingRef.current = true;
-      mr.start();
+      mr.start(1000); // 1s timeslice — chunks accumulate; chunks[0..n] stays valid webm
+
+      // Live pass: re-transcribe the audio-so-far every LIVE_INTERVAL_MS.
+      inFlightRef.current = false;
+      liveTimerRef.current = setInterval(async () => {
+        if (inFlightRef.current || sttRunRef.current !== runId) return;
+        const chunks = mediaChunksRef.current;
+        if (!chunks.length) return;
+        const blob = new Blob(chunks, { type: mr.mimeType || "audio/webm" });
+        if (blob.size < 4000) return; // too little audio to be worth a call yet
+        const size = blob.size;
+        inFlightRef.current = true;
+        const text = await transcribeBlob(blob, langCode);
+        inFlightRef.current = false;
+        // Ignore a response that finished out of order (older/shorter audio).
+        if (text && sttRunRef.current === runId && size >= lastSizeRef.current) {
+          lastSizeRef.current = size;
+          setTranscript(text);
+        }
+      }, LIVE_INTERVAL_MS);
     } catch {
       recordingRef.current = false;
+      clearLiveTimer();
       stopTracks();
-      setError("not-allowed"); // mic permission denied
+      setError("not-allowed");
       setListening(false);
     }
-  }, [stopTracks]);
+  }, [lang, transcribeBlob, stopTracks, clearLiveTimer]);
 
-  // Stop recording and send to Whisper; replace the browser preview with the
-  // more accurate transcript. Keep the preview if Whisper fails.
+  // Stop recording; do a final, most-accurate pass over the whole clip.
   const finishRecordingAndTranscribe = useCallback(() => {
+    clearLiveTimer();
     const mr = mediaRecRef.current;
     mediaRecRef.current = null;
     if (!mr || !recordingRef.current) { recordingRef.current = false; stopTracks(); return; }
     recordingRef.current = false;
-    const runId = sttRunRef.current + 1;
-    sttRunRef.current = runId;
+    const runId = sttRunRef.current;
+    const langCode = SPEECH_LANG[lang].split("-")[0];
 
     mr.onstop = async () => {
       stopTracks();
       const chunks = mediaChunksRef.current;
       mediaChunksRef.current = [];
-      if (!chunks.length) return;
       const blob = new Blob(chunks, { type: mr.mimeType || "audio/webm" });
       if (blob.size < 1200) return; // effectively silence
+      const size = blob.size;
       setTranscribing(true);
-      try {
-        const fd = new FormData();
-        fd.append("audio", blob, "speech.webm");
-        fd.append("lang", SPEECH_LANG[lang].split("-")[0]); // mr | hi | en
-        const res = await fetch(STT_ENDPOINT, { method: "POST", body: fd });
-        if (res.ok) {
-          const data = await res.json();
-          const text = String(data?.text ?? "").trim();
-          if (text && sttRunRef.current === runId) {
-            finalRef.current = text + " ";
-            setTranscript(text);
-          }
-        }
-      } catch {
-        /* keep the browser-recognized text */
-      } finally {
-        if (sttRunRef.current === runId) setTranscribing(false);
+      const text = await transcribeBlob(blob, langCode);
+      // Final clip is the longest, so it wins over any late live response.
+      if (text && sttRunRef.current === runId && size >= lastSizeRef.current) {
+        lastSizeRef.current = size;
+        finalRef.current = text + " ";
+        setTranscript(text);
       }
+      if (sttRunRef.current === runId) setTranscribing(false);
     };
     try { mr.stop(); } catch { stopTracks(); }
-  }, [lang, stopTracks]);
+  }, [lang, transcribeBlob, stopTracks, clearLiveTimer]);
 
   const startListening = useCallback(() => {
     setError(null);
     finalRef.current = "";
     triedFallbackRef.current = false;
-    sttRunRef.current += 1;   // cancel any in-flight transcription
+    sttRunRef.current += 1;
+    lastSizeRef.current = 0;
+    inFlightRef.current = false;
+    clearLiveTimer();
     setTranscribing(false);
     setTranscript("");
 
-    // Marathi: record and transcribe with Whisper (Groq) only — far more
-    // accurate than browser recognition, which mis-hears Marathi as Hindi.
-    // Text appears when the user turns the mic off (a voice-note flow).
     if (lang === "mr") {
+      // Marathi: live Whisper (accurate + grows as you speak).
       void startRecording();
       setListening(true);
       return;
     }
 
-    // English: browser recognition (real-time and already accurate).
+    // English: browser recognizer (real-time + accurate).
     const rec = buildRecognizer(SPEECH_LANG[lang]);
     if (!rec) { setError("unknown"); return; }
     recRef.current = rec;
     wantListeningRef.current = true;
     try { rec.start(); setListening(true); } catch { setListening(true); }
-  }, [lang, buildRecognizer, startRecording]);
+  }, [lang, buildRecognizer, startRecording, clearLiveTimer]);
 
   const stopListening = useCallback(() => {
     wantListeningRef.current = false;
@@ -214,10 +236,11 @@ export function useSpeech(lang: Lang) {
     wantListeningRef.current = false;
     recordingRef.current = false;
     sttRunRef.current += 1;
+    clearLiveTimer();
     try { recRef.current?.stop(); } catch {}
     try { mediaRecRef.current?.stop(); } catch {}
     mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
-  }, []);
+  }, [clearLiveTimer]);
 
   return {
     supported,
