@@ -429,14 +429,21 @@ export function ChatScreen() {
               submit();
             }
           }}
-          placeholder={speech.listening ? t("listening") : t("askPlaceholder")}
+          placeholder={
+            speech.transcribing
+              ? (lang === "mr" ? "आवाज मजकुरात रूपांतरित करत आहे…" : "Transcribing your voice…")
+              : speech.listening
+                ? t("listening")
+                : t("askPlaceholder")
+          }
           aria-label={t("askPlaceholder")}
-          className={cn(speech.listening && "border-accent")}
+          className={cn((speech.listening || speech.transcribing) && "border-accent")}
         />
         {speech.supported.stt && (
           <Button
             variant={speech.listening ? "accent" : "outline"}
             size="icon"
+            disabled={speech.transcribing}
             onClick={() => {
               if (speech.listening) {
                 speech.stopListening();
@@ -449,7 +456,13 @@ export function ChatScreen() {
             aria-label={speech.listening ? "Stop microphone" : "Start microphone"}
             aria-pressed={speech.listening}
           >
-            {speech.listening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+            {speech.transcribing ? (
+              <Spinner />
+            ) : speech.listening ? (
+              <MicOff className="h-5 w-5" />
+            ) : (
+              <Mic className="h-5 w-5" />
+            )}
           </Button>
         )}
         <Button size="icon" onClick={submit} disabled={ask.isPending || !input.trim()} aria-label={t("send")}>
