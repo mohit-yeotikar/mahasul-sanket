@@ -8,7 +8,7 @@ import { Badge, Button, Card, cn } from "@/components/ui";
 import { useLang } from "@/lib/i18n/LanguageProvider";
 import { CATEGORY_LABELS } from "@/lib/i18n/dictionaries";
 
-const ACCEPT = ".pdf,.docx,.md,.markdown,.txt,.csv,.tsv,.html,.htm,.json,.log";
+const ACCEPT = ".pdf,.docx,.md,.markdown,.txt,.csv,.tsv,.html,.htm,.json,.log,.png,.jpg,.jpeg,.webp,.tiff,.tif,.bmp";
 
 type Status = "queued" | "processing" | "indexed" | "duplicate" | "failed";
 interface Item {

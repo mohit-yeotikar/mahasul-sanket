@@ -10,8 +10,11 @@ import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ingestDocumentText } from "@/lib/ai/ingest";
-import { extractText, isSupportedFile } from "@/lib/ai/extract";
+import { extractText, isSupportedFile, fileExtension } from "@/lib/ai/extract";
 import { autoCatalog } from "@/lib/ai/catalog";
+import { geminiOcr } from "@/lib/ai/ocr";
+
+const IMAGE_EXT = ["png", "jpg", "jpeg", "webp", "gif", "bmp", "tiff", "tif"];
 import { CATEGORY_LABELS } from "@/lib/i18n/dictionaries";
 
 export const runtime = "nodejs";
@@ -38,10 +41,12 @@ export async function POST(req: NextRequest) {
   if (file.size > MAX_FILE_BYTES) {
     return NextResponse.json({ status: "failed", name: file.name, error: "File too large (max 20 MB)" });
   }
-  if (!isSupportedFile(file.name)) {
+  const ext = fileExtension(file.name);
+  const isImage = IMAGE_EXT.includes(ext);
+  if (!isSupportedFile(file.name) && !isImage) {
     return NextResponse.json({
       status: "failed", name: file.name,
-      error: "Unsupported type (PDF, DOCX, MD, TXT, CSV/TSV, HTML, JSON). Scanned images: use single upload with OCR.",
+      error: "Unsupported type (PDF, Word, Markdown, TXT, CSV/TSV, HTML, or a scanned image).",
     });
   }
 
@@ -52,13 +57,28 @@ export async function POST(req: NextRequest) {
     const { error: probeErr } = await admin.from("documents").select("content_hash").limit(1);
     const hasNewCols = !probeErr;
 
-    // 1. Extract text
-    const pages = await extractText(file);
+    // 1. Extract text — with Gemini vision OCR fallback for scanned PDFs & images
+    let pages: { text: string; page: number | null }[];
+    let ocrUsed = false;
+    if (isImage) {
+      const ocr = await geminiOcr(await file.arrayBuffer(), file.type || `image/${ext}`);
+      pages = [{ text: ocr, page: null }];
+      ocrUsed = true;
+    } else {
+      pages = await extractText(file);
+      const extracted = pages.map((p) => p.text).join("\n").trim();
+      if (extracted.length < 50 && ext === "pdf") {
+        const ocr = await geminiOcr(await file.arrayBuffer(), "application/pdf");
+        if (ocr.trim().length >= 50) { pages = [{ text: ocr, page: null }]; ocrUsed = true; }
+      }
+    }
     const fullText = pages.map((p) => p.text).join("\n").trim();
     if (fullText.length < 50) {
       return NextResponse.json({
         status: "failed", name: file.name,
-        error: "No readable text (scanned document?). Use single upload with OCR.",
+        error: ocrUsed
+          ? "OCR could not read this document — the scan may be too low-quality."
+          : "No readable text (scanned document with no OCR match).",
       });
     }
 
