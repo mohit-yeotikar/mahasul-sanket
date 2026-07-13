@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Clock } from "lucide-react";
-import { Badge, Card, cn } from "@/components/ui";
+import { Badge, Card, Select } from "@/components/ui";
 import { useLang } from "@/lib/i18n/LanguageProvider";
 import { CATEGORY_LABELS } from "@/lib/i18n/dictionaries";
 import { formatDate } from "@/lib/utils/datetime";
@@ -44,26 +44,27 @@ export function TicketsList({ tickets }: { tickets: TicketRow[] }) {
 
   const filtered = cat ? tickets.filter((t) => (t.category ?? "others") === cat) : tickets;
 
-  const chipClass = (active: boolean) =>
-    cn(
-      "shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
-      active
-        ? "border-primary bg-primary text-primary-fg"
-        : "border-border bg-surface hover:border-primary/40 hover:bg-surface-2"
-    );
-
   return (
     <div className="space-y-4">
-      {/* Service (category) filter */}
-      <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label={lang === "mr" ? "सेवेनुसार गाळा" : "Filter by service"}>
-        <button className={chipClass(cat === "")} onClick={() => setCat("")} aria-pressed={cat === ""}>
-          {lang === "mr" ? "सर्व" : "All"} ({tickets.length})
-        </button>
-        {chips.map((c) => (
-          <button key={c} className={chipClass(cat === c)} onClick={() => setCat(c)} aria-pressed={cat === c}>
-            {CATEGORY_LABELS[c]?.[lang] ?? c} ({counts.get(c)})
-          </button>
-        ))}
+      {/* Service (category) filter — dropdown */}
+      <div className="flex items-center gap-2">
+        <label htmlFor="ticket-service" className="text-sm text-muted">
+          {lang === "mr" ? "सेवा:" : "Service:"}
+        </label>
+        <Select
+          id="ticket-service"
+          value={cat}
+          onChange={(e) => setCat(e.target.value)}
+          className="w-full sm:w-72"
+          aria-label={lang === "mr" ? "सेवेनुसार गाळा" : "Filter by service"}
+        >
+          <option value="">{lang === "mr" ? `सर्व सेवा (${tickets.length})` : `All services (${tickets.length})`}</option>
+          {chips.map((c) => (
+            <option key={c} value={c}>
+              {(CATEGORY_LABELS[c]?.[lang] ?? c)} ({counts.get(c)})
+            </option>
+          ))}
+        </Select>
       </div>
 
       {!filtered.length && (
