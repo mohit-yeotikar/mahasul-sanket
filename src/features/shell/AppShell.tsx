@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, MessageSquareText, BookOpen, Ticket as TicketIcon,
   ShieldCheck, Users, BarChart3, Bell, Settings, ScrollText, Menu, X,
-  Moon, Sun, Contrast, LogOut, Landmark, UserRound,
+  Moon, Sun, Contrast, LogOut, Landmark, UserRound, LayoutGrid,
 } from "lucide-react";
 import { Button, cn } from "@/components/ui";
 import { useLang } from "@/lib/i18n/LanguageProvider";
@@ -27,6 +27,7 @@ const NAV: NavItem[] = [
   { href: "/dashboard", labelKey: "dashboard", icon: LayoutDashboard },
   { href: "/chat", labelKey: "aiChat", icon: MessageSquareText },
   { href: "/knowledge", labelKey: "knowledgeBase", icon: BookOpen },
+  { href: "/seva", labelKey: "seva", icon: LayoutGrid },
   { href: "/tickets", labelKey: "tickets", icon: TicketIcon },
   { href: "/dco", labelKey: "dcoPanel", icon: ShieldCheck, roles: ["nayab_tahsildar", "dco", "district_admin", "state_admin", "super_admin"] },
   { href: "/admin", labelKey: "adminPanel", icon: Users, roles: ["district_admin", "state_admin", "super_admin", "dco"] },

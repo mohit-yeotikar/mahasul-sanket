@@ -44,9 +44,14 @@ export function KnowledgeBrowser() {
     },
   });
 
-  const openFile = async (path: string) => {
-    const { data } = await supabase.storage.from("knowledge").createSignedUrl(path, 300);
-    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+  // Download via a server route: it signs the file with the admin client
+  // (browser signing is blocked by storage RLS) and forces a download.
+  const openFile = (path: string) => {
+    window.open(`/api/knowledge/download?path=${encodeURIComponent(path)}`, "_blank", "noopener");
+  };
+  const fileLabel = (path: string) => {
+    const ext = path.split(".").pop()?.toUpperCase();
+    return ext && ext.length <= 4 ? ext : lang === "mr" ? "उतरवा" : "Download";
   };
 
   const years = Array.from({ length: 15 }, (_, i) => new Date().getFullYear() - i);
@@ -112,7 +117,7 @@ export function KnowledgeBrowser() {
               </div>
               {d.file_path && (
                 <Button variant="outline" size="sm" onClick={() => openFile(d.file_path!)}>
-                  <Download className="h-4 w-4" /> PDF
+                  <Download className="h-4 w-4" /> {fileLabel(d.file_path)}
                 </Button>
               )}
             </div>

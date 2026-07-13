@@ -35,12 +35,18 @@ export async function POST(request: Request) {
   if (lang && lang !== "auto") upstream.append("language", lang); // e.g. "mr"
   upstream.append("response_format", "json");
   upstream.append("temperature", "0");
-  // Bias Whisper toward proper Marathi (not Hindi) + revenue-domain vocabulary,
-  // so words like सातबारा / फेरफार / आहे are transcribed correctly.
+  // Bias Whisper toward proper Marathi (not Hindi) + revenue-domain vocabulary
+  // and natural phrasing, so words like केल्यानंतर / वेळात / सातबारावर are
+  // transcribed correctly instead of garbled Hindi-ish forms. Whisper heeds the
+  // last ~224 tokens of this prompt, so keep it dense and domain-specific.
   if (lang === "mr") {
     upstream.append(
       "prompt",
-      "महाराष्ट्र महसूल विभागाची मराठी माहिती. सातबारा उतारा, फेरफार नोंद, वारस नोंद, पीक पाहणी, गाव नमुना, तलाठी, मंडळ अधिकारी, नायब तहसीलदार. प्रश्न: सातबारा नोंदणी प्रक्रिया काय आहे?"
+      [
+        "महाराष्ट्र महसूल विभागातील तलाठी, मंडळ अधिकारी, नायब तहसीलदार व तहसीलदार यांच्यासाठी मराठी प्रश्नोत्तरे.",
+        "शब्दसंग्रह: वारसदार, वारस नोंद, वारसाहक्क, फेरफार नोंद, सातबारा उतारा, गाव नमुना आठ-अ, पीक पाहणी, ई-पीक पाहणी, जमीन मोजणी, गट क्रमांक, सर्व्हे नंबर, हिस्सा, कब्जेदार, क्षेत्र, मृत्यू दाखला, वंशावळ, नोंदणी, अर्ज, प्रक्रिया, कागदपत्रे.",
+        "उदाहरण प्रश्न: वारसदारांची नोंद केल्यानंतर किती वेळात सातबारावर येते? फेरफार नोंदणीची प्रक्रिया काय आहे? वारस नोंद कशी करावी? पीक पाहणी नोंद कधी करायची असते?",
+      ].join(" ")
     );
   }
 
