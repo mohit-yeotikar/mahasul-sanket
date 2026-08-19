@@ -141,16 +141,23 @@ export async function answerQuestion(
     // Tier 2: good local matches — no embedding call needed.
     chunks = keyword;
   } else {
-    // Tier 3: semantic search for differently-worded questions.
-    const embedding = await getEmbedProvider().embed(question);
-    const { data: semChunks, error } = await db.rpc("search_knowledge", {
-      query_embedding: embedding,
-      query_text: question,
-      match_count: 8,
-      min_similarity: 0.45,
-    });
-    if (error) throw new Error(`Knowledge search failed: ${error.message}`);
-    chunks = semChunks ?? [];
+    // Tier 3: semantic search for differently-worded questions. If embeddings
+    // are momentarily unavailable (e.g. a Gemini rate-limit/hiccup), degrade
+    // gracefully to the keyword results instead of failing the whole answer.
+    try {
+      const embedding = await getEmbedProvider().embed(question);
+      const { data: semChunks, error } = await db.rpc("search_knowledge", {
+        query_embedding: embedding,
+        query_text: question,
+        match_count: 8,
+        min_similarity: 0.45,
+      });
+      if (error) throw new Error(`Knowledge search failed: ${error.message}`);
+      chunks = semChunks ?? [];
+    } catch (e) {
+      console.error("Semantic search unavailable, falling back to keyword results:", e);
+      chunks = keyword;
+    }
   }
 
   const context = (chunks ?? [])
