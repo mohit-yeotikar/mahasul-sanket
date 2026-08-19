@@ -1,7 +1,8 @@
 // Temporary diagnostic endpoint — verifies which AI provider production is
 // using and (with ?test=1) that a live chat call succeeds. Exposes NO secrets,
-// only booleans + the public provider/model names. Safe to delete after the
-// demo. GET /api/ai/health  or  /api/ai/health?test=1
+// only booleans + the public provider/model names. This path is whitelisted in
+// the middleware (PUBLIC_PATHS), so it's reachable without login. Safe to delete
+// after the demo. GET /api/health  or  /api/health?test=1
 import { NextRequest, NextResponse } from "next/server";
 import { getChatProvider } from "@/lib/ai/provider";
 import { createAdminClient } from "@/lib/supabase/server";
