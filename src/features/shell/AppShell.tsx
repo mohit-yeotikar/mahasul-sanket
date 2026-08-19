@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, MessageSquareText, BookOpen, Ticket as TicketIcon,
   ShieldCheck, Users, BarChart3, Settings, ScrollText, Menu, X,
-  Moon, Sun, Contrast, LogOut, Landmark, UserRound, LayoutGrid, Phone, SlidersHorizontal,
+  Moon, Sun, Contrast, LogOut, Landmark, UserRound, LayoutGrid, Phone, SlidersHorizontal, Megaphone,
 } from "lucide-react";
 import { Button, cn } from "@/components/ui";
 import { useLang } from "@/lib/i18n/LanguageProvider";
@@ -38,6 +38,7 @@ const NAV: NavItem[] = [
   { href: "/seva", labelKey: "seva", icon: LayoutGrid },
   { href: "/tickets", labelKey: "tickets", icon: TicketIcon, roles: STAFF },
   { href: "/dco", labelKey: "dcoPanel", icon: ShieldCheck, roles: ["nayab_tahsildar", "dco", "district_admin", "state_admin", "super_admin"] },
+  { href: "/grievances", labelKey: "grievances", icon: Megaphone, roles: ["nayab_tahsildar", "dco", "district_admin", "state_admin", "super_admin"] },
   { href: "/admin", labelKey: "adminPanel", icon: Users, roles: ["district_admin", "state_admin", "super_admin", "dco"] },
   { href: "/reports", labelKey: "reports", icon: BarChart3, roles: ["dco", "district_admin", "state_admin", "super_admin"] },
   { href: "/audit", labelKey: "auditLogs", icon: ScrollText, roles: ["district_admin", "state_admin", "super_admin"] },

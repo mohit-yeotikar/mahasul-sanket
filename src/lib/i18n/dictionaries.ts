@@ -43,6 +43,7 @@ const dict = {
   notifications: { mr: "सूचना", en: "Notifications" },
   settings: { mr: "सेटिंग्ज", en: "Settings" },
   aiSettings: { mr: "AI सेटिंग्ज", en: "AI Settings" },
+  grievances: { mr: "नागरिक तक्रारी", en: "Grievances" },
   profile: { mr: "प्रोफाइल", en: "Profile" },
   auditLogs: { mr: "लेखापरीक्षण नोंदी", en: "Audit Logs" },
   // Chat

@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Phone, FileText, Sprout, ListChecks, ArrowLeft } from "lucide-react";
+import { Phone, FileText, Sprout, ListChecks, Megaphone, ArrowLeft } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useLang } from "@/lib/i18n/LanguageProvider";
 import { LangToggle } from "@/features/auth/components/LangToggle";
@@ -14,14 +14,16 @@ import { FindOfficer } from "./FindOfficer";
 import { DocumentChecklist } from "./DocumentChecklist";
 import { EligibilityChecker } from "./EligibilityChecker";
 import { StatusTracker } from "./StatusTracker";
+import { Grievance } from "./Grievance";
 
-type TabKey = "officer" | "checklist" | "eligibility" | "status";
+type TabKey = "officer" | "checklist" | "eligibility" | "status" | "grievance";
 
-const TABS: { key: TabKey; icon: React.ComponentType<{ className?: string }>; mr: string; en: string }[] = [
+const TABS: { key: TabKey; icon: React.ComponentType<{ className?: string }>; mr: string; en: string; wide?: boolean }[] = [
   { key: "officer", icon: Phone, mr: "तुमचा तलाठी शोधा", en: "Find your Talathi" },
   { key: "checklist", icon: FileText, mr: "कागदपत्रांची यादी", en: "Document checklist" },
   { key: "eligibility", icon: Sprout, mr: "योजना पात्रता", en: "Scheme eligibility" },
   { key: "status", icon: ListChecks, mr: "अर्ज स्थिती", en: "Application status" },
+  { key: "grievance", icon: Megaphone, mr: "तक्रार नोंदवा", en: "File a grievance", wide: true },
 ];
 
 export function ToolsHub() {
@@ -52,7 +54,7 @@ export function ToolsHub() {
         </Reveal>
 
         {/* Tabs */}
-        <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-5">
           {TABS.map((t) => {
             const active = tab === t.key;
             return (
@@ -61,6 +63,8 @@ export function ToolsHub() {
                 onClick={() => setTab(t.key)}
                 aria-current={active ? "true" : undefined}
                 className={`flex items-center gap-2 rounded-2xl border p-3 text-left text-sm font-semibold transition-all ${
+                  t.wide ? "col-span-2 sm:col-span-1" : ""
+                } ${
                   active ? "border-primary bg-primary text-primary-fg shadow-md" : "border-border bg-surface hover:border-primary/40 hover:shadow-sm"
                 }`}
               >
@@ -76,6 +80,7 @@ export function ToolsHub() {
           {tab === "checklist" && <DocumentChecklist />}
           {tab === "eligibility" && <EligibilityChecker />}
           {tab === "status" && <StatusTracker />}
+          {tab === "grievance" && <Grievance />}
         </Reveal>
       </main>
 
