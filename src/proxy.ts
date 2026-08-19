@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-const PUBLIC_PATHS = ["/login", "/register", "/pending", "/api/health", "/api/voice"];
+const PUBLIC_PATHS = ["/login", "/register", "/pending", "/api/health", "/api/voice", "/api/public"];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -25,7 +25,9 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
-  const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  // "/" is the public landing (citizen homepage); everything else in PUBLIC_PATHS
+  // is matched by prefix. All other routes require a signed-in officer.
+  const isPublic = pathname === "/" || PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
   if (!user && !isPublic) {
     return NextResponse.redirect(new URL("/login", request.url));
