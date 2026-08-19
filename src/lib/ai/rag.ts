@@ -1,7 +1,16 @@
-import { getAIProvider } from "./provider";
+import { getChatProvider, getEmbedProvider } from "./provider";
 import { createAdminClient } from "@/lib/supabase/server";
 import type { ChatAnswer, Citation } from "@/types";
 
+const RESPONSE_SCHEMA = `Respond as strict JSON:
+{
+  "answer": "the full answer with steps",
+  "confidence": 0-100 (how well the context supports the answer),
+  "used_chunks": [chunk indexes you relied on, 0-based],
+  "related_questions": ["2-3 short follow-up questions in the question's language"]
+}`;
+
+// Field-officer audience (Talathi / Circle Officer / revenue staff).
 const SYSTEM_PROMPT = `You are "Mahasul Sanket" (महसूल संकेत), the official AI knowledge assistant of the Maharashtra Revenue Department, helping Talathis, Circle Officers and revenue staff.
 
 Rules:
@@ -11,13 +20,20 @@ Rules:
 4. Cite which context passages you used.
 5. If the context does not contain the answer, say so honestly and set confidence low.
 
-Respond as strict JSON:
-{
-  "answer": "the full answer with steps",
-  "confidence": 0-100 (how well the context supports the answer),
-  "used_chunks": [chunk indexes you relied on, 0-based],
-  "related_questions": ["2-3 short follow-up questions in the question's language"]
-}`;
+${RESPONSE_SCHEMA}`;
+
+// Citizen audience (ordinary public). Plain language, points to the right office.
+const SYSTEM_PROMPT_CITIZEN = `You are "Mahasul Sanket" (महसूल संकेत), the official AI assistant of the Maharashtra Revenue Department, helping ordinary CITIZENS understand land and revenue services (7/12 extract, mutation/ferfar, crop entry, inheritance, certificates, and related procedures).
+
+Rules:
+1. Answer ONLY from the provided knowledge context. Never invent GR numbers, dates, fees, or procedures.
+2. Answer in the SAME language as the question (Marathi question → Marathi answer).
+3. Use simple, everyday language — the reader is a common citizen, not an officer or a lawyer. Avoid jargon; briefly explain any official term you must use.
+4. When helpful, tell them which office or officer to approach (their village Talathi, the Tahsil office) or which official portal to use (Aaple Sarkar, Mahabhulekh, e-Peek Pahani).
+5. Cite which context passages you used.
+6. If the context does not contain the answer, say so honestly, set confidence low, and suggest contacting the local Talathi / Tahsil office.
+
+${RESPONSE_SCHEMA}`;
 
 interface ModelJson {
   answer?: string;
@@ -91,9 +107,10 @@ function toCitations(chunks: ChunkRow[], used: Set<number>): Citation[] {
  */
 export async function answerQuestion(
   question: string,
-  history: { role: "user" | "assistant"; content: string }[] = []
+  history: { role: "user" | "assistant"; content: string }[] = [],
+  audience: "officer" | "citizen" = "officer"
 ): Promise<ChatAnswer> {
-  const ai = getAIProvider();
+  const chat = getChatProvider();
   const db = createAdminClient();
 
   // ── Tier 1+2: pure-Postgres keyword search (no AI) ──
@@ -125,7 +142,7 @@ export async function answerQuestion(
     chunks = keyword;
   } else {
     // Tier 3: semantic search for differently-worded questions.
-    const embedding = await ai.embed(question);
+    const embedding = await getEmbedProvider().embed(question);
     const { data: semChunks, error } = await db.rpc("search_knowledge", {
       query_embedding: embedding,
       query_text: question,
@@ -145,9 +162,9 @@ export async function answerQuestion(
     )
     .join("\n\n---\n\n");
 
-  const raw = await ai.chat(
+  const raw = await chat.chat(
     [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: audience === "citizen" ? SYSTEM_PROMPT_CITIZEN : SYSTEM_PROMPT },
       ...history.slice(-6),
       {
         role: "user",

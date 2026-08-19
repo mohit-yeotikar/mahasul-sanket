@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { Button, Card, Field, Input, Select, Spinner } from "@/components/ui";
+import { Button, Field, Input, Select, Spinner } from "@/components/ui";
 import { useLang } from "@/lib/i18n/LanguageProvider";
 import { registerAction } from "../actions";
 
@@ -76,11 +75,7 @@ export function RegisterForm() {
   };
 
   return (
-    <Card className="p-8">
-      <h1 className="mb-1 text-center text-2xl font-bold">{t("register")}</h1>
-      <p className="mb-6 text-center text-sm text-muted">{t("appName")}</p>
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <Field label={t("fullName")} error={errors.fullName?.message} required>
           <Input autoComplete="name" {...register("fullName")} />
         </Field>
@@ -127,12 +122,5 @@ export function RegisterForm() {
           {isSubmitting ? <Spinner /> : t("register")}
         </Button>
       </form>
-
-      <p className="mt-6 text-center text-sm">
-        <Link href="/login" className="font-medium text-primary hover:underline">
-          {t("haveAccount")}
-        </Link>
-      </p>
-    </Card>
   );
 }

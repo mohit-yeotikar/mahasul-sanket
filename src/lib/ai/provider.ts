@@ -6,6 +6,8 @@
 // in .env — no application code changes.
 // ============================================================
 
+import { GrokOAuthProvider } from "./grok-oauth";
+
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
@@ -127,21 +129,53 @@ class OpenAICompatibleProvider implements AIProvider {
   }
 }
 
-let cached: AIProvider | null = null;
-
-export function getAIProvider(): AIProvider {
-  if (cached) return cached;
-  const provider = process.env.AI_PROVIDER ?? "gemini";
+function build(provider: string): AIProvider {
   switch (provider) {
     case "gemini":
-      cached = new GeminiProvider();
-      break;
+      return new GeminiProvider();
     case "openrouter":
     case "selfhosted":
-      cached = new OpenAICompatibleProvider();
-      break;
+    case "xai":
+    case "openai":
+      return new OpenAICompatibleProvider();
+    case "grok-oauth":
+      return new GrokOAuthProvider();
     default:
-      throw new Error(`Unknown AI_PROVIDER: ${provider}`);
+      throw new Error(`Unknown AI provider: ${provider}`);
   }
-  return cached;
+}
+
+let chatCached: AIProvider | null = null;
+let embedCached: AIProvider | null = null;
+
+/**
+ * Provider for CHAT (answers, cataloguing). Swap freely — set AI_PROVIDER to
+ * `openrouter` (one key → Grok / GPT / Claude / Gemini-Pro), `xai` (Grok
+ * direct), or `selfhosted`. Falls back to free Gemini.
+ */
+export function getChatProvider(): AIProvider {
+  if (!chatCached) chatCached = build(process.env.AI_PROVIDER ?? "gemini");
+  return chatCached;
+}
+
+/**
+ * Provider for EMBEDDINGS. Embeddings define the vector space of every chunk
+ * already stored in pgvector, so they MUST stay on the same model that
+ * ingested the documents. By default we pin embeddings to Gemini (free,
+ * 768-dim) even when chat runs on a premium provider — so you can upgrade the
+ * chat model for a demo with ZERO re-ingestion. Only set AI_EMBED_PROVIDER if
+ * you deliberately re-ingest the whole knowledge base with a new model.
+ */
+export function getEmbedProvider(): AIProvider {
+  if (embedCached) return embedCached;
+  const provider =
+    process.env.AI_EMBED_PROVIDER ??
+    (process.env.GEMINI_API_KEY ? "gemini" : process.env.AI_PROVIDER ?? "gemini");
+  embedCached = build(provider);
+  return embedCached;
+}
+
+/** @deprecated use getChatProvider() / getEmbedProvider(). Kept for callers that only chat. */
+export function getAIProvider(): AIProvider {
+  return getChatProvider();
 }

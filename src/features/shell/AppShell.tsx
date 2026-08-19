@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, MessageSquareText, BookOpen, Ticket as TicketIcon,
   ShieldCheck, Users, BarChart3, Bell, Settings, ScrollText, Menu, X,
-  Moon, Sun, Contrast, LogOut, Landmark, UserRound, LayoutGrid,
+  Moon, Sun, Contrast, LogOut, Landmark, UserRound, LayoutGrid, Phone,
 } from "lucide-react";
 import { Button, cn } from "@/components/ui";
 import { useLang } from "@/lib/i18n/LanguageProvider";
@@ -23,17 +23,25 @@ interface NavItem {
   roles?: UserRole[]; // undefined = everyone
 }
 
+// Every non-citizen (government) role — used to hide staff-only modules
+// from the public citizen account.
+const STAFF: UserRole[] = [
+  "talathi", "circle_officer", "nayab_tahsildar",
+  "dco", "district_admin", "state_admin", "super_admin",
+];
+
 const NAV: NavItem[] = [
   { href: "/dashboard", labelKey: "dashboard", icon: LayoutDashboard },
   { href: "/chat", labelKey: "aiChat", icon: MessageSquareText },
-  { href: "/knowledge", labelKey: "knowledgeBase", icon: BookOpen },
+  { href: "/officers", labelKey: "officers", icon: Phone, roles: ["citizen", "talathi", "circle_officer"] },
+  { href: "/knowledge", labelKey: "knowledgeBase", icon: BookOpen, roles: STAFF },
   { href: "/seva", labelKey: "seva", icon: LayoutGrid },
-  { href: "/tickets", labelKey: "tickets", icon: TicketIcon },
+  { href: "/tickets", labelKey: "tickets", icon: TicketIcon, roles: STAFF },
   { href: "/dco", labelKey: "dcoPanel", icon: ShieldCheck, roles: ["nayab_tahsildar", "dco", "district_admin", "state_admin", "super_admin"] },
   { href: "/admin", labelKey: "adminPanel", icon: Users, roles: ["district_admin", "state_admin", "super_admin", "dco"] },
   { href: "/reports", labelKey: "reports", icon: BarChart3, roles: ["dco", "district_admin", "state_admin", "super_admin"] },
   { href: "/audit", labelKey: "auditLogs", icon: ScrollText, roles: ["district_admin", "state_admin", "super_admin"] },
-  { href: "/settings", labelKey: "settings", icon: Settings },
+  { href: "/settings", labelKey: "settings", icon: Settings, roles: STAFF },
 ];
 
 export function AppShell({ profile, children }: { profile: Profile; children: React.ReactNode }) {

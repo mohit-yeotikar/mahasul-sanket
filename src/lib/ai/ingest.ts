@@ -1,7 +1,7 @@
 // Document ingestion: text → chunks → embeddings → pgvector.
 // Upload → OCR/extract → Chunk → Embed → Store → AI retrieval.
 
-import { getAIProvider } from "./provider";
+import { getEmbedProvider } from "./provider";
 import { createAdminClient } from "@/lib/supabase/server";
 
 /** Sentence-aware chunking with overlap, tuned for GR/circular prose. */
@@ -37,7 +37,7 @@ export async function ingestDocumentText(
   documentId: string,
   pages: { text: string; page: number | null }[]
 ): Promise<{ chunks: number }> {
-  const ai = getAIProvider();
+  const ai = getEmbedProvider();
   const db = createAdminClient();
 
   await db.from("document_chunks").delete().eq("document_id", documentId);

@@ -2,7 +2,7 @@
 // title, description, doc type and service category. Used by bulk ingestion so
 // the admin doesn't type metadata for every GR.
 
-import { getAIProvider } from "./provider";
+import { getChatProvider } from "./provider";
 
 export type DocType = "gr" | "circular" | "faq" | "sop" | "notification" | "manual" | "other";
 
@@ -57,7 +57,7 @@ function parseJson(raw: string): Record<string, unknown> {
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 
 export async function autoCatalog(text: string, fallbackTitle: string): Promise<DocMetadata> {
-  const ai = getAIProvider();
+  const ai = getChatProvider();
   const excerpt = text.slice(0, 6000);
 
   let parsed: Record<string, unknown> = {};
