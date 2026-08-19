@@ -40,9 +40,9 @@ export function ImpactStats() {
           {M ? "परिणाम" : "Impact"}
         </p>
         <h2 className="mt-1 text-2xl font-bold sm:text-3xl">
-          {M ? "आकड्यांमध्ये महसूल संकेत" : "Mahasul Sanket in numbers"}
+          {M ? "आकड्यांमध्ये" : "In numbers"}
         </h2>
-        <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-[11px] font-medium text-muted">
+        <p className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-bold text-primary sm:text-base">
           {M ? "प्रात्यक्षिक आकडेवारी" : "Illustrative demo figures"}
         </p>
       </div>

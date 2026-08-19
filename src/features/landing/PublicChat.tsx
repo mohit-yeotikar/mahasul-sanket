@@ -63,7 +63,9 @@ export function PublicChat() {
   // Let service tiles elsewhere on the page ask a question: they dispatch a
   // window "ms-ask" event; we run it and scroll the assistant into view.
   const askRef = useRef(ask);
-  askRef.current = ask;
+  useEffect(() => {
+    askRef.current = ask;
+  });
   useEffect(() => {
     const handler = (e: Event) => {
       const q = (e as CustomEvent<string>).detail;

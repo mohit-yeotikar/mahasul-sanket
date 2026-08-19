@@ -23,6 +23,7 @@ import { Reveal, Stagger, StaggerItem } from "@/components/motion";
 import { Leadership } from "./Leadership";
 import { PublicChat } from "./PublicChat";
 import { ImpactStats } from "./ImpactStats";
+import { CoverageMap } from "./CoverageMap";
 import { MaharashtraSilhouette } from "./MaharashtraSilhouette";
 
 type Service = {
@@ -112,7 +113,7 @@ export function LandingPage() {
               {M ? "महसूल सेवांची माहिती," : "Land & revenue answers,"}
               <br className="hidden sm:block" />
               <span className="ms-kinetic bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">
-                {M ? " तुमच्या भाषेत, क्षणात" : " in your language, instantly"}
+                {M ? " तुमच्या भाषेत, काही क्षणांमध्ये!" : " in your language, in moments!"}
               </span>
             </h1>
           </Reveal>
@@ -144,6 +145,9 @@ export function LandingPage() {
 
       {/* ── Impact stats band (GOAL 2) ────────────────────────── */}
       <ImpactStats />
+
+      {/* ── Live coverage — interactive Maharashtra map ───────── */}
+      <CoverageMap />
 
       {/* ── Quick services — bento ────────────────────────────── */}
       <section className="mx-auto w-full max-w-6xl px-4 py-12">
@@ -209,7 +213,7 @@ export function LandingPage() {
       <section className="mx-auto w-full max-w-6xl px-4 py-14">
         <Reveal className="mb-9 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{M ? "फायदे" : "Why"}</p>
-          <h2 className="mt-1 text-2xl font-bold sm:text-3xl">{M ? "का महसूल संकेत?" : "Why Mahasul Sanket?"}</h2>
+          <h2 className="mt-1 text-2xl font-bold sm:text-3xl">{M ? "महसूल संकेत का वापरावा?" : "Why Mahasul Sanket?"}</h2>
         </Reveal>
         <Stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" gap={0.07} amount={0.15}>
           {BENEFITS.map((b) => (

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="महसूल संकेत">
+  <defs>
+    <radialGradient id="s" cx="34%" cy="24%" r="86%">
+      <stop offset="0" stop-color="#57b585"/>
+      <stop offset="48%" stop-color="#1f6640"/>
+      <stop offset="100%" stop-color="#0d3720"/>
+    </radialGradient>
+    <linearGradient id="r" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f2cf7a"/>
+      <stop offset="100%" stop-color="#b9822a"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="31" fill="url(#s)"/>
+  <circle cx="32" cy="32" r="30" fill="none" stroke="url(#r)" stroke-width="3"/>
+  <ellipse cx="24" cy="18" rx="14" ry="8" fill="#ffffff" opacity="0.14"/>
+  <path d="M20 19h14l5 5v20a2 2 0 0 1-2 2H20a2 2 0 0 1-2-2V21a2 2 0 0 1 2-2Z" fill="#ffffff"/>
+  <rect x="23" y="29" width="13" height="2.6" rx="1.3" fill="#bcd6c6"/>
+  <rect x="23" y="34" width="13" height="2.6" rx="1.3" fill="#bcd6c6"/>
+  <rect x="23" y="39" width="8" height="2.6" rx="1.3" fill="#e07b00"/>
+  <g fill="none" stroke="#f2cf7a" stroke-width="3" stroke-linecap="round">
+    <path d="M42 24a6 6 0 0 1 6 6"/>
+    <path d="M42 18.5a11.5 11.5 0 0 1 11.5 11.5"/>
+  </g>
+  <circle cx="42" cy="30" r="2.6" fill="#e07b00"/>
+</svg>

@@ -13,7 +13,7 @@ import { Reveal, Stagger, StaggerItem } from "@/components/motion";
 interface Leader {
   name_mr: string; name_en: string;
   desig_mr: string; desig_en: string;
-  img: string; highlight?: boolean;
+  img: string;
 }
 
 // Tier 1 — state political leadership.
@@ -46,7 +46,6 @@ const DEPT: Leader[] = [
     name_mr: "श्री. चंद्रशेखर बावनकुळे", name_en: "Shri Chandrashekhar Bawankule",
     desig_mr: "माननीय महसूल मंत्री, महाराष्ट्र", desig_en: "Hon'ble Revenue Minister, Maharashtra",
     img: "https://rfd.maharashtra.gov.in/Image/manyavar/ChandrashekharKrishnaraoBawankule223e251358746.png",
-    highlight: true,
   },
   {
     name_mr: "श्री. योगेश कदम", name_en: "Shri Yogesh Kadam",
@@ -74,9 +73,7 @@ function Portrait({ leader, size = "md" }: { leader: Leader; size?: "md" | "lg" 
   const dim = size === "lg" ? "h-24 w-24 sm:h-28 sm:w-28" : "h-20 w-20 sm:h-24 sm:w-24";
   return (
     <div
-      className={`group relative ${dim} overflow-hidden rounded-full shadow-md ring-2 ring-offset-2 ring-offset-surface transition-transform duration-300 group-hover:scale-[1.03] ${
-        leader.highlight ? "ring-accent" : "ring-primary/25"
-      }`}
+      className={`group relative ${dim} overflow-hidden rounded-full shadow-md ring-2 ring-primary/25 ring-offset-2 ring-offset-surface transition-transform duration-300 group-hover:scale-[1.03]`}
     >
       {err ? (
         <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary to-secondary text-2xl font-bold text-primary-fg">
@@ -105,8 +102,8 @@ function Tier({ leaders, size, cols }: { leaders: Leader[]; size?: "md" | "lg"; 
         <StaggerItem key={l.name_en} className="w-full max-w-[9.5rem]">
           <div className="group flex flex-col items-center px-1 text-center">
             <Portrait leader={l} size={size} />
-            <p className="mt-3 text-sm font-bold leading-snug">{l.name_mr}</p>
-            <p className={`mt-0.5 text-[11px] leading-snug ${l.highlight ? "font-semibold text-accent" : "text-muted"}`}>
+            <p className="mt-3 text-[15px] font-extrabold leading-snug text-foreground">{l.name_mr}</p>
+            <p className="mt-0.5 text-[12px] font-semibold leading-snug text-muted">
               {l.desig_mr}
             </p>
           </div>
