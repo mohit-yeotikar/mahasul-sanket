@@ -4,6 +4,12 @@ import { OfficerL2Dashboard, type OfficerL2Data } from "@/features/dashboard/Off
 import { DcoL3Dashboard, type DcoL3Data } from "@/features/dashboard/DcoL3Dashboard";
 import { AdminL4Dashboard, type AdminL4Data } from "@/features/dashboard/AdminL4Dashboard";
 import { StateL5Dashboard, type StateL5Data } from "@/features/dashboard/StateL5Dashboard";
+import {
+  CitizenDashboard,
+  type CitizenDashboardData,
+  type CitizenOfficer,
+  type CitizenInfoItem,
+} from "@/features/dashboard/CitizenDashboard";
 
 export const metadata = { title: "मुख्यपृष्ठ | महसूल संकेत" };
 
@@ -14,6 +20,42 @@ export default async function DashboardPage() {
   const { data: profile } = await supabase
     .from("profiles").select("role, full_name").eq("id", user!.id).single();
   const isFieldUser = ["talathi", "circle_officer"].includes(profile?.role ?? "talathi");
+
+  // ── Citizen: limited public home (info feed + area officers) ──
+  if (profile?.role === "citizen") {
+    const { data: me } = await supabase
+      .from("profiles")
+      .select("district_id, taluka_id, district:districts(name_mr,name_en)")
+      .eq("id", user!.id)
+      .single();
+
+    const districtId = (me as { district_id?: string } | null)?.district_id ?? null;
+    const talukaId = (me as { taluka_id?: string } | null)?.taluka_id ?? null;
+
+    const [officersRes, docsRes] = await Promise.all([
+      districtId
+        ? supabase.rpc("area_officers", { p_district: districtId, p_taluka: talukaId })
+        : Promise.resolve({ data: [] as CitizenOfficer[] }),
+      supabase
+        .from("documents")
+        .select("id,title,title_mr,summary,doc_type,gr_number,issued_date,created_at")
+        .eq("status", "approved")
+        .order("issued_date", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .limit(6),
+    ]);
+
+    const dist = (me?.district as { name_mr?: string; name_en?: string } | null) ?? null;
+
+    const data: CitizenDashboardData = {
+      fullName: profile?.full_name ?? "",
+      districtNameMr: dist?.name_mr ?? null,
+      districtNameEn: dist?.name_en ?? null,
+      officers: (officersRes.data ?? []) as CitizenOfficer[],
+      newInfo: (docsRes.data ?? []) as CitizenInfoItem[],
+    };
+    return <CitizenDashboard data={data} />;
+  }
 
   if (isFieldUser) {
     const [

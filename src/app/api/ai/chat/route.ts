@@ -23,6 +23,11 @@ export async function POST(req: NextRequest) {
   const { question } = parsed.data;
   let { conversationId } = parsed.data;
 
+  // Tailor the AI's tone: citizens get plain-language answers, staff get
+  // step-by-step procedural answers.
+  const { data: prof } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  const audience = prof?.role === "citizen" ? "citizen" : "officer";
+
   // Create conversation if new (RLS ensures ownership)
   if (!conversationId) {
     const { data: conv, error } = await supabase
@@ -50,7 +55,7 @@ export async function POST(req: NextRequest) {
   });
 
   try {
-    const result = await answerQuestion(question, history);
+    const result = await answerQuestion(question, history, audience);
 
     const { data: saved } = await supabase
       .from("messages")

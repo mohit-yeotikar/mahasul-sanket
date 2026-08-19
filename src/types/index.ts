@@ -1,6 +1,7 @@
 // Shared domain types — mirror of supabase/migrations schema.
 
 export type UserRole =
+  | "citizen"
   | "talathi"
   | "circle_officer"
   | "nayab_tahsildar"

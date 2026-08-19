@@ -39,6 +39,7 @@ const dict = {
   adminPanel: { mr: "प्रशासन", en: "Admin" },
   users: { mr: "वापरकर्ते", en: "Users" },
   reports: { mr: "अहवाल", en: "Reports" },
+  officers: { mr: "क्षेत्रातील अधिकारी", en: "Area Officers" },
   notifications: { mr: "सूचना", en: "Notifications" },
   settings: { mr: "सेटिंग्ज", en: "Settings" },
   profile: { mr: "प्रोफाइल", en: "Profile" },
@@ -96,6 +97,7 @@ export function t(key: DictKey, lang: Lang): string {
 }
 
 export const ROLE_LABELS: Record<string, { mr: string; en: string }> = {
+  citizen: { mr: "नागरिक", en: "Citizen" },
   talathi: { mr: "तलाठी", en: "Talathi" },
   circle_officer: { mr: "मंडळ अधिकारी", en: "Circle Officer" },
   nayab_tahsildar: { mr: "नायब तहसीलदार", en: "Nayab Tahsildar" },
