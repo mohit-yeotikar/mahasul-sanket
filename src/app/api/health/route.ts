@@ -1,19 +1,37 @@
 // Temporary diagnostic endpoint — verifies which AI provider production is
-// using and (with ?test=1) that a live chat call succeeds. Exposes NO secrets,
-// only booleans + the public provider/model names. This path is whitelisted in
-// the middleware (PUBLIC_PATHS), so it's reachable without login. Safe to delete
-// after the demo. GET /api/health  or  /api/health?test=1
+// using and (with ?test=1) that a live chat call succeeds. Redacts any
+// secret-looking values so a misconfigured env var can't leak a key. This path
+// is whitelisted in the middleware (PUBLIC_PATHS). Safe to delete after the demo.
+// GET /api/health  or  /api/health?test=1
 import { NextRequest, NextResponse } from "next/server";
 import { getChatProvider } from "@/lib/ai/provider";
 import { createAdminClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
+const KNOWN_PROVIDERS = ["gemini", "openrouter", "xai", "openai", "selfhosted", "grok-oauth"];
+
+// Mask anything that looks like an API key/token so it never appears in output.
+function redact(s: string): string {
+  return s
+    .replace(/gsk_[A-Za-z0-9]+/g, "gsk_***")
+    .replace(/sk-[A-Za-z0-9-]+/g, "sk-***")
+    .replace(/xai-[A-Za-z0-9-]+/g, "xai-***")
+    .replace(/AIza[A-Za-z0-9_-]+/g, "AIza***")
+    .replace(/eyJ[A-Za-z0-9._-]+/g, "eyJ***");
+}
+
 export async function GET(req: NextRequest) {
+  const rawProvider = process.env.AI_PROVIDER ?? "gemini";
+  const provider = KNOWN_PROVIDERS.includes(rawProvider)
+    ? rawProvider
+    : "INVALID — AI_PROVIDER must be one of: gemini | openrouter | xai | grok-oauth";
+
   const body: Record<string, unknown> = {
-    provider: process.env.AI_PROVIDER ?? "gemini",
+    provider,
     chatModel: process.env.AI_CHAT_MODEL ?? null,
     hasGeminiKey: !!process.env.GEMINI_API_KEY,
+    hasGroqKey: !!process.env.GROQ_API_KEY,
   };
 
   try {
@@ -36,7 +54,7 @@ export async function GET(req: NextRequest) {
       body.reply = out.slice(0, 40);
     } catch (e) {
       body.chatTest = "error";
-      body.error = (e instanceof Error ? e.message : String(e)).slice(0, 300);
+      body.error = redact((e instanceof Error ? e.message : String(e)).slice(0, 300));
     }
   }
 
