@@ -35,6 +35,32 @@ Rules:
 
 ${RESPONSE_SCHEMA}`;
 
+// Used when retrieval found NO matching document. Instead of refusing, give
+// helpful general guidance — clearly labelled, and without inventing official refs.
+const SYSTEM_NODOC = `You are "Mahasul Sanket" (महसूल संकेत), the official AI knowledge assistant of the Maharashtra Revenue Department, helping revenue staff.
+
+No official document in the knowledge base matched this question — but still be helpful:
+1. Give practical, step-by-step GENERAL guidance based on standard Maharashtra revenue procedure.
+2. Answer in the SAME language as the question (Marathi question → Marathi answer).
+3. Start with a one-line note that this is general guidance, not quoted from a specific GR/circular.
+4. NEVER invent GR numbers, circular numbers, or exact dates.
+5. End by advising the reader to confirm with the concerned office / original GR.
+Set "confidence" between 30 and 55.
+
+${RESPONSE_SCHEMA}`;
+
+const SYSTEM_NODOC_CITIZEN = `You are "Mahasul Sanket" (महसूल संकेत), the official AI assistant of the Maharashtra Revenue Department, helping ordinary CITIZENS.
+
+No official document in the knowledge base matched this question — but still be helpful:
+1. Explain the process in simple, everyday language based on standard Maharashtra revenue practice.
+2. Answer in the SAME language as the question (Marathi question → Marathi answer).
+3. Start with a one-line note that this is general guidance, not from a specific official document.
+4. NEVER invent GR numbers, fees, or exact dates.
+5. Tell them which office or portal to use (village Talathi, Tahsil office, Aaple Sarkar) and to confirm there.
+Set "confidence" between 30 and 55.
+
+${RESPONSE_SCHEMA}`;
+
 interface ModelJson {
   answer?: string;
   confidence?: number;
@@ -150,7 +176,7 @@ export async function answerQuestion(
         query_embedding: embedding,
         query_text: question,
         match_count: 8,
-        min_similarity: 0.45,
+        min_similarity: 0.3,
       });
       if (error) throw new Error(`Knowledge search failed: ${error.message}`);
       chunks = semChunks ?? [];
@@ -169,13 +195,22 @@ export async function answerQuestion(
     )
     .join("\n\n---\n\n");
 
+  // When we DID find documents, answer strictly from them (grounded + cited).
+  // When we found NOTHING, don't refuse — give helpful general guidance.
+  const hasContext = (chunks?.length ?? 0) > 0;
+  const systemPrompt = hasContext
+    ? (audience === "citizen" ? SYSTEM_PROMPT_CITIZEN : SYSTEM_PROMPT)
+    : (audience === "citizen" ? SYSTEM_NODOC_CITIZEN : SYSTEM_NODOC);
+
   const raw = await chat.chat(
     [
-      { role: "system", content: audience === "citizen" ? SYSTEM_PROMPT_CITIZEN : SYSTEM_PROMPT },
+      { role: "system", content: systemPrompt },
       ...history.slice(-6),
       {
         role: "user",
-        content: `KNOWLEDGE CONTEXT:\n${context || "(no relevant documents found)"}\n\nQUESTION: ${question}`,
+        content: hasContext
+          ? `KNOWLEDGE CONTEXT:\n${context}\n\nQUESTION: ${question}`
+          : `QUESTION: ${question}`,
       },
     ],
     { json: true }

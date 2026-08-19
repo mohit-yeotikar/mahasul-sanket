@@ -434,8 +434,8 @@ export function ChatScreen() {
               ? (lang === "mr" ? "आवाज मजकुरात रूपांतरित करत आहे…" : "Transcribing your voice…")
               : speech.listening
                 ? (lang === "mr"
-                    ? "🎙️ ऐकत आहे… बोलून झाल्यावर माइक बंद करा"
-                    : t("listening"))
+                    ? "🎙️ ऐकत आहे… बोलणे थांबवताच आपोआप थांबेल"
+                    : "🎙️ Listening… stops automatically when you pause")
                 : t("askPlaceholder")
           }
           aria-label={t("askPlaceholder")}

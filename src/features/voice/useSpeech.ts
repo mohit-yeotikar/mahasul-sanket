@@ -16,6 +16,8 @@ const SPEECH_LANG: Record<Lang | "hi", string> = {
 
 const STT_ENDPOINT = "/api/voice/stt";      // Groq Whisper (server route)
 const LIVE_INTERVAL_MS = 2500;              // how often to re-transcribe while speaking
+const SILENCE_MS = 1500;                    // auto-stop this long after speech goes quiet
+const SPEECH_RMS = 0.025;                   // loudness above this counts as speaking
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SR = any;
@@ -50,6 +52,11 @@ export function useSpeech(lang: Lang) {
   const liveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inFlightRef = useRef(false);        // one live request at a time
   const lastSizeRef = useRef(0);            // only apply results from ever-longer audio
+
+  // Voice-activity detection — auto-stop when the user stops speaking.
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const vadTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoStopRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     const w = window as unknown as { SpeechRecognition?: SR; webkitSpeechRecognition?: SR };
@@ -108,6 +115,12 @@ export function useSpeech(lang: Lang) {
     if (liveTimerRef.current) { clearInterval(liveTimerRef.current); liveTimerRef.current = null; }
   }, []);
 
+  const clearVad = useCallback(() => {
+    if (vadTimerRef.current) { clearInterval(vadTimerRef.current); vadTimerRef.current = null; }
+    try { audioCtxRef.current?.close(); } catch { /* already closed */ }
+    audioCtxRef.current = null;
+  }, []);
+
   const transcribeBlob = useCallback(async (blob: Blob, langCode: string): Promise<string | null> => {
     try {
       const fd = new FormData();
@@ -142,6 +155,35 @@ export function useSpeech(lang: Lang) {
       recordingRef.current = true;
       mr.start(1000); // 1s timeslice — chunks accumulate; chunks[0..n] stays valid webm
 
+      // Voice-activity detection: once the user has spoken and then gone quiet
+      // for ~SILENCE_MS, auto-stop so they don't have to tap the mic off.
+      try {
+        const Ctx = window.AudioContext ||
+          (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        const audioCtx = new Ctx();
+        audioCtxRef.current = audioCtx;
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 512;
+        audioCtx.createMediaStreamSource(stream).connect(analyser);
+        const buf = new Uint8Array(analyser.fftSize);
+        const startedAt = Date.now();
+        let lastLoud = Date.now();
+        let sawSpeech = false;
+        vadTimerRef.current = setInterval(() => {
+          if (sttRunRef.current !== runId) return;
+          analyser.getByteTimeDomainData(buf);
+          let sum = 0;
+          for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; sum += v * v; }
+          const rms = Math.sqrt(sum / buf.length);
+          const now = Date.now();
+          if (rms > SPEECH_RMS) { lastLoud = now; sawSpeech = true; }
+          else if (sawSpeech && now - lastLoud > SILENCE_MS && now - startedAt > 1200) {
+            clearVad();
+            autoStopRef.current();   // = stopListening → final transcription pass
+          }
+        }, 150);
+      } catch { /* AudioContext unavailable — manual mic-off still works */ }
+
       // Live pass: re-transcribe the audio-so-far every LIVE_INTERVAL_MS.
       inFlightRef.current = false;
       liveTimerRef.current = setInterval(async () => {
@@ -163,15 +205,17 @@ export function useSpeech(lang: Lang) {
     } catch {
       recordingRef.current = false;
       clearLiveTimer();
+      clearVad();
       stopTracks();
       setError("not-allowed");
       setListening(false);
     }
-  }, [lang, transcribeBlob, stopTracks, clearLiveTimer]);
+  }, [lang, transcribeBlob, stopTracks, clearLiveTimer, clearVad]);
 
   // Stop recording; do a final, most-accurate pass over the whole clip.
   const finishRecordingAndTranscribe = useCallback(() => {
     clearLiveTimer();
+    clearVad();
     const mr = mediaRecRef.current;
     mediaRecRef.current = null;
     if (!mr || !recordingRef.current) { recordingRef.current = false; stopTracks(); return; }
@@ -197,7 +241,7 @@ export function useSpeech(lang: Lang) {
       if (sttRunRef.current === runId) setTranscribing(false);
     };
     try { mr.stop(); } catch { stopTracks(); }
-  }, [lang, transcribeBlob, stopTracks, clearLiveTimer]);
+  }, [lang, transcribeBlob, stopTracks, clearLiveTimer, clearVad]);
 
   const startListening = useCallback(() => {
     setError(null);
@@ -207,6 +251,7 @@ export function useSpeech(lang: Lang) {
     lastSizeRef.current = 0;
     inFlightRef.current = false;
     clearLiveTimer();
+    clearVad();
     setTranscribing(false);
     setTranscript("");
 
@@ -223,7 +268,7 @@ export function useSpeech(lang: Lang) {
     recRef.current = rec;
     wantListeningRef.current = true;
     try { rec.start(); setListening(true); } catch { setListening(true); }
-  }, [lang, buildRecognizer, startRecording, clearLiveTimer]);
+  }, [lang, buildRecognizer, startRecording, clearLiveTimer, clearVad]);
 
   const stopListening = useCallback(() => {
     wantListeningRef.current = false;
@@ -232,15 +277,20 @@ export function useSpeech(lang: Lang) {
     finishRecordingAndTranscribe();
   }, [finishRecordingAndTranscribe]);
 
+  // The VAD loop calls autoStopRef.current(); keep it pointed at the latest
+  // stopListening so it triggers a real stop without a dependency cycle.
+  useEffect(() => { autoStopRef.current = stopListening; }, [stopListening]);
+
   useEffect(() => () => {
     wantListeningRef.current = false;
     recordingRef.current = false;
     sttRunRef.current += 1;
     clearLiveTimer();
+    clearVad();
     try { recRef.current?.stop(); } catch {}
     try { mediaRecRef.current?.stop(); } catch {}
     mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
-  }, [clearLiveTimer]);
+  }, [clearLiveTimer, clearVad]);
 
   return {
     supported,
