@@ -328,3 +328,43 @@ export async function proposeKnowledgeAction(
   revalidatePath(`/tickets/${ticketId}`);
   return { ok: true };
 }
+
+/* ── Apply AI triage suggestion (L2+ officer): set category + priority ── */
+const CATEGORIES = [
+  "mutation", "seven_twelve", "ferfar", "crop_entry", "inheritance",
+  "revenue", "survey", "map", "certificates", "digital_signature",
+  "technical_issue", "others",
+];
+const PRIORITIES = ["low", "medium", "high", "critical"];
+
+export async function applyTriageAction(
+  ticketId: string,
+  category: string,
+  priority: string
+): Promise<Result> {
+  const actor = await getActor();
+  if (!actor) return { ok: false, error: "Unauthorized" };
+  if (!["nayab_tahsildar", "dco", "district_admin", "state_admin", "super_admin"].includes(actor.profile.role)) {
+    return { ok: false, error: "Only L2+ officers can triage tickets." };
+  }
+  if (!CATEGORIES.includes(category) || !PRIORITIES.includes(priority)) {
+    return { ok: false, error: "Invalid category or priority." };
+  }
+
+  const { error } = await actor.supabase
+    .from("tickets")
+    .update({ category, priority })
+    .eq("id", ticketId)
+    .select("id")
+    .single();
+  if (error) return { ok: false, error: "Update failed (no access?)" };
+
+  const admin = createAdminClient();
+  await admin.from("ticket_events").insert({
+    ticket_id: ticketId, actor_id: actor.profile.id,
+    event_type: "triage_applied", new_value: `${category} / ${priority}`,
+  });
+
+  revalidatePath(`/tickets/${ticketId}`);
+  return { ok: true };
+}

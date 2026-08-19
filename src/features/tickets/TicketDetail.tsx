@@ -2,16 +2,32 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowUpCircle, Clock, CheckCircle2, BookPlus, Lock } from "lucide-react";
+import { ArrowUpCircle, Clock, CheckCircle2, BookPlus, Lock, Sparkles, Wand2, FileText } from "lucide-react";
 import { Badge, Button, Card, Field, Input, Spinner, Textarea, cn } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
 import { useLang } from "@/lib/i18n/LanguageProvider";
 import { CATEGORY_LABELS, ROLE_LABELS } from "@/lib/i18n/dictionaries";
 import { TicketStatusBadge } from "./TicketStatusBadge";
 import {
-  replyAction, escalateAction, setSlaAction, setStatusAction, proposeKnowledgeAction,
+  replyAction, escalateAction, setSlaAction, setStatusAction, proposeKnowledgeAction, applyTriageAction,
 } from "./actions";
 import type { Ticket, UserRole } from "@/types";
+
+interface TriageResult {
+  category: string;
+  priority: string;
+  reason: string;
+  draft: string;
+  confidence: number;
+  citations: { title: string; gr_number: string | null }[];
+}
+
+const PRIORITY_LABEL: Record<string, { mr: string; en: string; tone: "neutral" | "warning" | "danger" | "primary" }> = {
+  low: { mr: "कमी", en: "Low", tone: "neutral" },
+  medium: { mr: "मध्यम", en: "Medium", tone: "primary" },
+  high: { mr: "उच्च", en: "High", tone: "warning" },
+  critical: { mr: "तातडीचे", en: "Critical", tone: "danger" },
+};
 
 interface Reply {
   id: string;
@@ -43,12 +59,35 @@ export function TicketDetail({
   const [showPropose, setShowPropose] = useState(false);
   const [proposeQ, setProposeQ] = useState(ticket.source_question ?? ticket.subject);
   const [proposeA, setProposeA] = useState("");
+  const [triage, setTriage] = useState<TriageResult | null>(null);
+  const [triageLoading, setTriageLoading] = useState(false);
+  const [triageErr, setTriageErr] = useState<string>();
 
   const isOfficer = OFFICER_ROLES.includes(viewerRole);
   const isCreator = ticket.created_by === viewerId;
   const canPropose = viewerRole === "dco" || viewerRole === "nayab_tahsildar";
 
   const toast = useToast();
+
+  const runTriage = async () => {
+    setTriageLoading(true);
+    setTriageErr(undefined);
+    setTriage(null);
+    try {
+      const res = await fetch("/api/tickets/triage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticketId: ticket.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Triage failed");
+      setTriage(data as TriageResult);
+    } catch (e) {
+      setTriageErr(e instanceof Error ? e.message : "Triage failed");
+    } finally {
+      setTriageLoading(false);
+    }
+  };
 
   const run = (fn: () => Promise<{ ok: boolean; error?: string }>, successMsg?: string) =>
     startTransition(async () => {
@@ -90,6 +129,93 @@ export function TicketDetail({
           </div>
         )}
       </Card>
+
+      {/* AI smart triage (L2+) */}
+      {isOfficer && (
+        <Card className="space-y-3 border-primary/20 bg-primary/[0.03] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="flex items-center gap-2 text-sm font-semibold">
+              <Wand2 className="h-4 w-4 text-primary" aria-hidden />
+              {lang === "mr" ? "AI स्मार्ट त्रिआज" : "AI smart triage"}
+            </p>
+            <Button size="sm" variant="outline" disabled={triageLoading} onClick={runTriage}>
+              {triageLoading ? <Spinner className="h-4 w-4" /> : <Sparkles className="h-4 w-4" aria-hidden />}
+              {triage
+                ? (lang === "mr" ? "पुन्हा विश्लेषण करा" : "Re-analyze")
+                : (lang === "mr" ? "विश्लेषण करा" : "Analyze ticket")}
+            </Button>
+          </div>
+
+          {!triage && !triageLoading && !triageErr && (
+            <p className="text-xs text-muted">
+              {lang === "mr"
+                ? "AI श्रेणी, प्राधान्य व ज्ञानाधारित मसुदा उत्तर सुचवेल — तुम्ही तपासून लागू करा."
+                : "The AI will suggest a category, priority and a knowledge-grounded draft reply — you review and apply."}
+            </p>
+          )}
+          {triageErr && <p className="text-sm text-danger">⚠️ {triageErr}</p>}
+
+          {triage && (
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted">{lang === "mr" ? "सुचवलेली श्रेणी:" : "Suggested category:"}</span>
+                <Badge tone="primary">{CATEGORY_LABELS[triage.category]?.[lang] ?? triage.category}</Badge>
+                <span className="text-xs text-muted">{lang === "mr" ? "प्राधान्य:" : "Priority:"}</span>
+                <Badge tone={PRIORITY_LABEL[triage.priority]?.tone ?? "neutral"}>
+                  {PRIORITY_LABEL[triage.priority]?.[lang] ?? triage.priority}
+                </Badge>
+                <Button
+                  size="sm"
+                  disabled={pending}
+                  onClick={() =>
+                    run(
+                      () => applyTriageAction(ticket.id, triage.category, triage.priority),
+                      lang === "mr" ? "श्रेणी व प्राधान्य लागू केले ✅" : "Category & priority applied ✅"
+                    )
+                  }
+                >
+                  {lang === "mr" ? "लागू करा" : "Apply"}
+                </Button>
+              </div>
+              {triage.reason && <p className="text-sm text-muted">{triage.reason}</p>}
+
+              <div className="rounded-lg border border-border bg-surface p-3">
+                <div className="mb-1 flex flex-wrap items-center gap-2">
+                  <p className="text-xs font-semibold text-muted">
+                    {lang === "mr" ? "मसुदा उत्तर" : "Draft reply"}
+                  </p>
+                  <Badge tone={triage.confidence >= 60 ? "success" : "warning"}>
+                    {lang === "mr" ? "विश्वास" : "Confidence"}: {triage.confidence}%
+                  </Badge>
+                </div>
+                <p className="whitespace-pre-wrap text-sm">{triage.draft}</p>
+                {!!triage.citations.length && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {triage.citations.map((c, i) => (
+                      <span key={i} className="inline-flex items-center gap-1 rounded-md bg-surface-2 px-2 py-0.5 text-xs text-muted">
+                        <FileText className="h-3 w-3" aria-hidden />
+                        {c.title.length > 40 ? c.title.slice(0, 40) + "…" : c.title}
+                        {c.gr_number ? ` · GR ${c.gr_number}` : ""}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-3"
+                  onClick={() => {
+                    setReplyText(triage.draft);
+                    toast(lang === "mr" ? "मसुदा उत्तर बॉक्समध्ये भरले — तपासून पाठवा" : "Draft loaded into the reply box — review & send", "success");
+                  }}
+                >
+                  {lang === "mr" ? "मसुदा उत्तर वापरा" : "Use as reply"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Officer controls */}
       {isOfficer && (
