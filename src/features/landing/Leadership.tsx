@@ -22,12 +22,12 @@ const LEADERS: Leader[] = [
   {
     name_mr: "श्री. देवेंद्र फडणवीस", name_en: "Shri Devendra Fadnavis",
     desig_mr: "माननीय मुख्यमंत्री, महाराष्ट्र", desig_en: "Hon'ble Chief Minister, Maharashtra",
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Shri_Devendra_Gangadharrao_Fadnavis.jpg/330px-Shri_Devendra_Gangadharrao_Fadnavis.jpg",
+    img: "https://rfd.maharashtra.gov.in/Image/manyavar/Devendra%20fadnavis230414757242819206251716335.png",
   },
   {
     name_mr: "श्री. एकनाथ शिंदे", name_en: "Shri Eknath Shinde",
     desig_mr: "माननीय उपमुख्यमंत्री, महाराष्ट्र", desig_en: "Hon'ble Deputy Chief Minister",
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Eknath_Shinde_SS.jpg/330px-Eknath_Shinde_SS.jpg",
+    img: "https://rfd.maharashtra.gov.in/Image/manyavar/eknath%20shinde230008195242843531251625547.png",
   },
   {
     name_mr: "श्रीमती. सुनेत्रा पवार", name_en: "Smt. Sunetra Pawar",
@@ -37,7 +37,7 @@ const LEADERS: Leader[] = [
   {
     name_mr: "श्री. चंद्रशेखर बावनकुळे", name_en: "Shri Chandrashekhar Bawankule",
     desig_mr: "माननीय महसूल मंत्री, महाराष्ट्र", desig_en: "Hon'ble Revenue Minister, Maharashtra",
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/The_Maharashtra_Energy_Minister%2C_Shri_Chandrashkahr_Bawankule_calling_on_the_Minister_of_State_%28IC%29_for_Power_and_New_and_Renewable_Energy%2C_Shri_Raj_Kumar_Singh%2C_in_New_Delhi_on_October_16%2C_2017_%28cropped%29.jpg/330px-thumbnail.jpg",
+    img: "https://rfd.maharashtra.gov.in/Image/manyavar/ChandrashekharKrishnaraoBawankule223e251358746.png",
     highlight: true,
   },
 ];
@@ -60,7 +60,6 @@ function Portrait({ leader }: { leader: Leader }) {
         <img
           src={leader.img}
           alt={leader.name_en}
-          loading="lazy"
           onError={() => setErr(true)}
           className="h-full w-full object-cover object-top"
         />
