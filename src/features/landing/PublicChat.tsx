@@ -60,8 +60,23 @@ export function PublicChat() {
     }
   };
 
+  // Let service tiles elsewhere on the page ask a question: they dispatch a
+  // window "ms-ask" event; we run it and scroll the assistant into view.
+  const askRef = useRef(ask);
+  askRef.current = ask;
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const q = (e as CustomEvent<string>).detail;
+      if (!q) return;
+      askRef.current(q);
+      document.getElementById("citizen-ai")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+    window.addEventListener("ms-ask", handler);
+    return () => window.removeEventListener("ms-ask", handler);
+  }, []);
+
   return (
-    <div className="w-full text-left">
+    <div id="citizen-ai" className="w-full scroll-mt-24 text-left">
       <div className="flex items-end gap-2 rounded-2xl border border-border bg-surface p-2 shadow-xl shadow-primary/5">
         <Textarea
           rows={1}

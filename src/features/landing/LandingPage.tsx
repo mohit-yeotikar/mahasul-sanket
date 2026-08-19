@@ -1,49 +1,52 @@
 "use client";
 
-// Public brand homepage — official government identity (tricolor strip +
-// leadership), a premium hero with the AI chatbox in the first fold, then value
-// sections and an officer-login path. Fully responsive, theme-aware.
+// Public CITIZEN homepage. Content is written for ordinary people getting
+// information & services — not the officer workflow. Officer features live in a
+// small separate strip. Modern bento layout, government identity + leadership.
 
 import Link from "next/link";
 import {
-  LogIn, FileText, Mic, Ticket as TicketIcon, BookOpen, LayoutGrid, Map,
-  ShieldCheck, ArrowRight, BadgeCheck, Languages, Clock,
+  LogIn, FileText, Map, ClipboardList, Sprout, FileSignature, Building2, Stamp,
+  HandCoins, ShieldCheck, ArrowRight, ArrowUpRight, BadgeCheck, Mic, Languages,
+  Clock, Megaphone, LayoutDashboard, Sparkles,
 } from "lucide-react";
-import { Logo, LogoMark } from "@/components/Logo";
+import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui";
 import { useLang } from "@/lib/i18n/LanguageProvider";
 import { LangToggle } from "@/features/auth/components/LangToggle";
 import { Leadership } from "./Leadership";
 import { PublicChat } from "./PublicChat";
 
-type Feat = { icon: React.ComponentType<{ className?: string }>; tmr: string; ten: string; dmr: string; den: string };
+type Service = {
+  icon: React.ComponentType<{ className?: string }>;
+  mr: string; en: string; dmr: string; den: string;
+  url?: string; ask?: string; wide?: boolean;
+};
 
-const FEATURES: Feat[] = [
-  { icon: FileText, tmr: "अधिकृत उत्तरे + संदर्भ", ten: "Cited, authoritative answers",
-    dmr: "प्रत्येक उत्तर संबंधित शासन निर्णय/परिपत्रकाचा संदर्भ देते — कल्पित माहिती नाही.",
-    den: "Every answer cites the exact GR/circular it used — never invented." },
-  { icon: Mic, tmr: "मराठी आवाज", ten: "Marathi voice",
-    dmr: "टाइप न करता बोला — बोलणे थांबवताच आपोआप थांबते व अचूक मजकुरात रूपांतर होते.",
-    den: "Speak instead of typing — auto-stops when you pause and transcribes accurately." },
-  { icon: TicketIcon, tmr: "तिकीट व ४-स्तरीय एस्केलेशन", ten: "Tickets & 4-level escalation",
-    dmr: "उत्तर न मिळाल्यास तलाठी → नायब तहसीलदार → DCO → जिल्हा प्रशासन असे कालमर्यादेसह.",
-    den: "Unresolved queries escalate Talathi → Nayab Tahsildar → DCO → District Admin, with SLAs." },
-  { icon: BookOpen, tmr: "ज्ञान भांडार", ten: "Living knowledge base",
-    dmr: "GR, परिपत्रके, SOP एकाच ठिकाणी — मंजूर झालेली माहितीच AI वापरते.",
-    den: "GRs, circulars and SOPs in one place — only approved knowledge is used." },
-  { icon: LayoutGrid, tmr: "नागरिक सेवा", ten: "Citizen services",
-    dmr: "७/१२, फेरफार, आपले सरकार, महाडीबीटी — अधिकृत पोर्टलचे थेट दुवे.",
-    den: "7/12, ferfar, Aaple Sarkar, MahaDBT — direct links to official portals." },
-  { icon: Map, tmr: "राज्यस्तरीय विश्लेषण", ten: "State-wide analytics",
-    dmr: "जिल्हानिहाय नकाशा, तिकीट व कामगिरीची थेट आकडेवारी — प्रशासनासाठी.",
-    den: "Live district map, ticket and performance metrics for administration." },
+// A citizen's real needs — each tile either opens the official portal or asks
+// the AI (via the "ms-ask" event the chatbox listens for).
+const SERVICES: Service[] = [
+  { icon: FileText, mr: "७/१२ व ८अ उतारा", en: "7/12 & 8A Extract", dmr: "तुमचा डिजिटल जमीन अभिलेख पहा व डाउनलोड करा", den: "View & download your digital land record", url: "https://bhulekh.mahabhumi.gov.in", wide: true },
+  { icon: ClipboardList, mr: "फेरफार म्हणजे काय?", en: "What is Ferfar?", dmr: "नावात बदल व वारस नोंद प्रक्रिया — AI ला विचारा", den: "Mutation & name-change process — ask the AI", ask: "फेरफार नोंदीची प्रक्रिया काय आहे आणि किती दिवस लागतात?" },
+  { icon: Sprout, mr: "ई-पीक पाहणी", en: "e-Peek Pahani", dmr: "मोबाइलवरून पीक नोंदणी कशी करायची", den: "How to record your crop from mobile", ask: "ई-पीक पाहणी मोबाइल ॲपवरून कशी करायची?" },
+  { icon: FileSignature, mr: "डिजिटल स्वाक्षरीत ७/१२", en: "Signed 7/12", dmr: "अधिकृत स्वाक्षरीत उतारा", den: "Officially signed extract", url: "https://digitalsatbara.mahabhumi.gov.in/DSLR" },
+  { icon: Building2, mr: "दाखले (आपले सरकार)", en: "Certificates (RTS)", dmr: "रहिवासी, उत्पन्न, जात दाखले", den: "Domicile, income, caste certificates", url: "https://aaplesarkar.mahaonline.gov.in" },
+  { icon: Map, mr: "जमीन नकाशा", en: "Land Map", dmr: "गट / सर्व्हे नकाशा पहा", den: "View survey/parcel map", url: "https://mahabhunakasha.mahabhumi.gov.in" },
+  { icon: Stamp, mr: "दस्त नोंदणी / मुद्रांक", en: "Registration & Stamps", dmr: "IGR / SARITA — ई-सर्च व मुद्रांक", den: "IGR/SARITA — e-Search & stamp duty", url: "https://igrmaharashtra.gov.in" },
+  { icon: HandCoins, mr: "शेतकरी योजना", en: "Farmer Schemes", dmr: "MahaDBT — लाभ व अर्ज", den: "MahaDBT — benefits & applications", url: "https://mahadbt.maharashtra.gov.in" },
 ];
 
-const STEPS = [
-  { tmr: "विचारा", ten: "Ask", dmr: "प्रश्न टाइप करा किंवा मराठीत बोला.", den: "Type your question or speak it in Marathi." },
-  { tmr: "उत्तर मिळवा", ten: "Get the answer", dmr: "अधिकृत संदर्भांसह, काही सेकंदात.", den: "Grounded in official sources, in seconds." },
-  { tmr: "गरज पडल्यास तिकीट", ten: "Escalate if needed", dmr: "एका क्लिकवर वरिष्ठ अधिकाऱ्यांकडे, कालमर्यादेसह.", den: "One click to a senior officer, with a timeline." },
+type Benefit = { icon: React.ComponentType<{ className?: string }>; tmr: string; ten: string; dmr: string; den: string };
+const BENEFITS: Benefit[] = [
+  { icon: BadgeCheck, tmr: "अधिकृत व अचूक", ten: "Official & accurate", dmr: "उत्तरे शासन निर्णय व परिपत्रकांवर आधारित — संदर्भासह.", den: "Answers grounded in official GRs & circulars — with citations." },
+  { icon: Mic, tmr: "मराठी आवाज", ten: "Marathi voice", dmr: "बोला, टाइप करण्याची गरज नाही — बोलणे थांबवताच आपोआप थांबते.", den: "Just speak — it auto-stops when you pause." },
+  { icon: Languages, tmr: "सर्व सेवा एका ठिकाणी", ten: "Everything in one place", dmr: "महाभूलेख, आपले सरकार, IGR, MahaDBT — थेट दुवे.", den: "Mahabhulekh, Aaple Sarkar, IGR, MahaDBT — direct links." },
+  { icon: Clock, tmr: "मोफत · २४×७", ten: "Free · 24×7", dmr: "लॉगिनशिवाय, कधीही, कुठूनही — मोबाइल व संगणकावर.", den: "No login, anytime, anywhere — mobile & desktop." },
 ];
+
+function ask(q: string) {
+  window.dispatchEvent(new CustomEvent("ms-ask", { detail: q }));
+}
 
 export function LandingPage() {
   const { lang } = useLang();
@@ -77,31 +80,30 @@ export function LandingPage() {
         </div>
       </header>
 
-      {/* Leadership */}
       <Leadership />
 
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
-          <div className="absolute inset-0 bg-[radial-gradient(70%_60%_at_50%_-8%,rgba(63,148,100,0.20),transparent_70%)]" />
-          <div className="absolute inset-0 opacity-[0.4] [background-image:radial-gradient(rgba(26,92,56,0.10)_1px,transparent_1px)] [background-size:22px_22px]" />
+          <div className="absolute inset-0 bg-[radial-gradient(75%_60%_at_50%_-10%,rgba(63,148,100,0.22),transparent_70%)]" />
+          <div className="absolute inset-0 opacity-40 [background-image:radial-gradient(rgba(26,92,56,0.09)_1px,transparent_1px)] [background-size:24px_24px]" />
         </div>
-        <div className="mx-auto max-w-3xl px-4 pb-14 pt-12 text-center">
+        <div className="mx-auto max-w-3xl px-4 pb-12 pt-12 text-center">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3.5 py-1.5 text-xs font-semibold text-primary">
-            <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
-            {M ? "शासन निर्णयांवर आधारित · अधिकृत" : "Grounded in official GRs · Authoritative"}
+            <Sparkles className="h-3.5 w-3.5" aria-hidden />
+            {M ? "नागरिकांसाठी · मोफत · मराठीत" : "For citizens · Free · in Marathi"}
           </div>
           <h1 className="text-[2rem] font-extrabold leading-[1.15] tracking-tight sm:text-[3rem]">
-            {M ? "गावातील प्रत्येक महसूल प्रश्नाचं" : "Instant, authoritative answers"}
+            {M ? "महसूल सेवांची माहिती," : "Land & revenue answers,"}
             <br className="hidden sm:block" />
             <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              {M ? " तात्काळ, अधिकृत उत्तर" : " to every revenue question"}
+              {M ? " तुमच्या भाषेत, क्षणात" : " in your language, instantly"}
             </span>
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-base text-muted sm:text-lg">
             {M
-              ? "तलाठ्यांपासून नागरिकांपर्यंत — शासन निर्णय व परिपत्रकांवर आधारित AI सहाय्यक. मराठीत विचारा किंवा बोला."
-              : "For Talathis to citizens — an AI assistant grounded in official GRs & circulars. Ask in Marathi, by text or voice."}
+              ? "७/१२, फेरफार, वारस नोंद, दाखले, पीक पाहणी — AI ला मराठीत विचारा किंवा खालील सेवा थेट वापरा."
+              : "7/12, mutation, inheritance, certificates, crop entry — ask the AI in Marathi, or use a service below directly."}
           </p>
 
           <div className="mt-9">
@@ -109,80 +111,103 @@ export function LandingPage() {
           </div>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-medium text-muted">
-            <span className="inline-flex items-center gap-1.5"><BadgeCheck className="h-4 w-4 text-primary" aria-hidden />{M ? "अधिकृत संदर्भ" : "Cited sources"}</span>
+            <span className="inline-flex items-center gap-1.5"><BadgeCheck className="h-4 w-4 text-primary" aria-hidden />{M ? "अधिकृत माहिती" : "Official info"}</span>
             <span className="inline-flex items-center gap-1.5"><Mic className="h-4 w-4 text-primary" aria-hidden />{M ? "मराठी आवाज" : "Marathi voice"}</span>
-            <span className="inline-flex items-center gap-1.5"><Languages className="h-4 w-4 text-primary" aria-hidden />{M ? "मराठी + इंग्रजी" : "Marathi + English"}</span>
-            <span className="inline-flex items-center gap-1.5"><Clock className="h-4 w-4 text-primary" aria-hidden />{M ? "२४×७ · मोफत" : "24×7 · Free"}</span>
+            <span className="inline-flex items-center gap-1.5"><Clock className="h-4 w-4 text-primary" aria-hidden />{M ? "मोफत · लॉगिनशिवाय" : "Free · no login"}</span>
           </div>
         </div>
       </section>
 
-      {/* What it does */}
-      <section className="mx-auto w-full max-w-6xl px-4 py-16">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-2xl font-bold sm:text-3xl">{M ? "ही प्रणाली काय करते" : "What this system does"}</h2>
-          <p className="mt-3 text-muted">
-            {M
-              ? "गावातील तलाठ्यापासून जिल्हा प्रशासनापर्यंत — एकच विश्वासार्ह, अधिकृत ज्ञान व्यासपीठ."
-              : "One trusted, official knowledge platform — from the village Talathi to district administration."}
-          </p>
+      {/* Quick services — bento */}
+      <section className="mx-auto w-full max-w-6xl px-4 py-12">
+        <div className="mb-8 text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{M ? "सेवा" : "Services"}</p>
+          <h2 className="mt-1 text-2xl font-bold sm:text-3xl">{M ? "तुम्हाला काय हवं आहे?" : "What do you need?"}</h2>
         </div>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((f) => (
-            <div key={f.ten} className="group rounded-2xl border border-border bg-surface p-6 transition-all hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-secondary/10 text-primary transition-colors group-hover:from-primary group-hover:to-secondary group-hover:text-primary-fg">
-                <f.icon className="h-6 w-6" aria-hidden />
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          {SERVICES.map((s) => {
+            const inner = (
+              <>
+                <div className={`flex items-center justify-center rounded-xl transition-colors ${s.wide ? "h-12 w-12 bg-white/15 text-white" : "h-11 w-11 bg-gradient-to-br from-primary/15 to-secondary/10 text-primary group-hover:from-primary group-hover:to-secondary group-hover:text-primary-fg"}`}>
+                  <s.icon className="h-5 w-5" aria-hidden />
+                </div>
+                <div className="mt-3 flex items-start gap-1.5">
+                  <h3 className={`font-semibold leading-snug ${s.wide ? "text-lg text-white" : ""}`}>{M ? s.mr : s.en}</h3>
+                  {s.url ? <ArrowUpRight className={`mt-0.5 h-4 w-4 shrink-0 ${s.wide ? "text-white/80" : "text-muted group-hover:text-primary"}`} aria-hidden />
+                    : <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-muted group-hover:translate-x-0.5 group-hover:text-primary" aria-hidden />}
+                </div>
+                <p className={`mt-1 text-sm ${s.wide ? "text-white/85" : "text-muted"}`}>{M ? s.dmr : s.den}</p>
+              </>
+            );
+            const cls = `group flex h-full flex-col rounded-2xl border p-5 text-left transition-all hover:-translate-y-1 ${
+              s.wide ? "col-span-2 border-transparent bg-gradient-to-br from-primary to-secondary shadow-lg hover:shadow-xl"
+                     : "border-border bg-surface hover:border-primary/30 hover:shadow-md"
+            }`;
+            return s.url ? (
+              <a key={s.en} href={s.url} target="_blank" rel="noopener noreferrer" className={cls}>{inner}</a>
+            ) : (
+              <button key={s.en} onClick={() => ask(s.ask!)} className={cls}>{inner}</button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Campaign announcement */}
+      <section className="mx-auto w-full max-w-6xl px-4 pb-4">
+        <div className="flex flex-col items-start gap-4 rounded-2xl border border-accent/25 bg-accent-soft p-5 sm:flex-row sm:items-center">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent">
+            <Megaphone className="h-5 w-5" aria-hidden />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-foreground">
+              {M ? "छत्रपती शिवाजी महाराज महाराजस्व अभियान" : "Chhatrapati Shivaji Maharaj Maharajaswa Abhiyan"}
+            </p>
+            <p className="mt-0.5 text-sm text-muted">
+              {M ? "गावोगावी महसूल सेवा शिबिरे — दाखले, फेरफार, सातबारा दुरुस्ती एकाच ठिकाणी." : "Village-level revenue service camps — certificates, mutations and 7/12 corrections in one place."}
+            </p>
+          </div>
+          <Button variant="accent" size="sm" className="shrink-0" onClick={() => ask("छत्रपती शिवाजी महाराज महाराजस्व अभियान म्हणजे काय आणि त्यात कोणत्या सेवा मिळतात?")}>
+            {M ? "अधिक विचारा" : "Ask more"}
+          </Button>
+        </div>
+      </section>
+
+      {/* Why */}
+      <section className="mx-auto w-full max-w-6xl px-4 py-14">
+        <div className="mb-9 text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{M ? "फायदे" : "Why"}</p>
+          <h2 className="mt-1 text-2xl font-bold sm:text-3xl">{M ? "का महसूल संकेत?" : "Why Mahasul Sanket?"}</h2>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {BENEFITS.map((b) => (
+            <div key={b.ten} className="rounded-2xl border border-border bg-surface p-6">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <b.icon className="h-5 w-5" aria-hidden />
               </div>
-              <h3 className="mt-4 text-lg font-semibold">{M ? f.tmr : f.ten}</h3>
-              <p className="mt-1.5 text-sm text-muted">{M ? f.dmr : f.den}</p>
+              <h3 className="mt-4 font-semibold">{M ? b.tmr : b.ten}</h3>
+              <p className="mt-1.5 text-sm text-muted">{M ? b.dmr : b.den}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="border-y border-border bg-surface-2/40">
-        <div className="mx-auto max-w-4xl px-4 py-16">
-          <h2 className="text-center text-2xl font-bold sm:text-3xl">{M ? "कसे वापरायचे" : "How it works"}</h2>
-          <div className="mt-12 grid gap-10 sm:grid-cols-3">
-            {STEPS.map((s, i) => (
-              <div key={i} className="relative text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-xl font-bold text-primary-fg shadow-md shadow-primary/20">
-                  {i + 1}
-                </div>
-                <h3 className="mt-4 text-lg font-semibold">{M ? s.tmr : s.ten}</h3>
-                <p className="mt-1.5 text-sm text-muted">{M ? s.dmr : s.den}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Officer CTA */}
-      <section className="mx-auto max-w-5xl px-4 py-16">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-secondary px-6 py-12 text-center text-primary-fg shadow-xl sm:px-12">
-          <div className="pointer-events-none absolute inset-0 opacity-10 [background-image:radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px]" aria-hidden />
-          <div className="relative">
-            <h2 className="text-2xl font-bold sm:text-3xl">{M ? "अधिकारी किंवा कर्मचारी आहात?" : "Are you an officer or staff member?"}</h2>
-            <p className="mx-auto mt-3 max-w-xl text-primary-fg/90">
-              {M
-                ? "तलाठी, मंडळ अधिकारी, तहसील व जिल्हा प्रशासनासाठी संपूर्ण डॅशबोर्ड, तिकीट प्रणाली व राज्यस्तरीय विश्लेषण."
-                : "Full dashboards, ticketing and state-wide analytics for Talathi, Circle Officer, Tahsil and District administration."}
-            </p>
-            <div className="mt-7 flex flex-wrap justify-center gap-3">
-              <Link href="/login">
-                <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-white/90">
-                  <LogIn className="h-5 w-5" aria-hidden />
-                  {M ? "प्रवेश करा" : "Sign in"}
-                </Button>
-              </Link>
-              <Link href="/register">
-                <Button size="lg" variant="outline" className="border-white/60 bg-transparent text-white hover:bg-white/10">
-                  {M ? "नवीन नोंदणी" : "Register"}
-                  <ArrowRight className="h-4 w-4" aria-hidden />
-                </Button>
-              </Link>
+      {/* Officer strip (separate, compact) */}
+      <section className="mx-auto w-full max-w-6xl px-4 pb-16">
+        <div className="flex flex-col items-center justify-between gap-4 rounded-2xl border border-border bg-surface-2/50 p-6 text-center sm:flex-row sm:text-left">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <LayoutDashboard className="h-5 w-5" aria-hidden />
             </div>
+            <div>
+              <p className="font-semibold">{M ? "शासकीय अधिकारी आहात?" : "Are you a government officer?"}</p>
+              <p className="text-sm text-muted">
+                {M ? "तलाठी ते जिल्हा प्रशासन — डॅशबोर्ड, तिकीट प्रणाली व राज्यस्तरीय विश्लेषण." : "Talathi to District admin — dashboards, ticketing & state-wide analytics."}
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <Link href="/login"><Button size="sm"><LogIn className="h-4 w-4" aria-hidden />{M ? "प्रवेश" : "Sign in"}</Button></Link>
+            <Link href="/register"><Button size="sm" variant="outline">{M ? "नोंदणी" : "Register"}</Button></Link>
           </div>
         </div>
       </section>
@@ -195,15 +220,15 @@ export function LandingPage() {
             <p className="mt-3 max-w-sm text-sm text-muted">
               {M
                 ? "महाराष्ट्र शासन, महसूल विभागाचा AI ज्ञान सहाय्यक — शासन निर्णय व परिपत्रकांवर आधारित अचूक, अधिकृत मार्गदर्शन."
-                : "The Maharashtra Revenue Department's AI knowledge assistant — accurate, authoritative guidance grounded in official GRs & circulars."}
+                : "The Maharashtra Revenue Department's AI knowledge assistant — accurate guidance grounded in official GRs & circulars."}
             </p>
           </div>
           <div className="sm:text-right">
             <div className="flex flex-wrap gap-x-6 gap-y-2 sm:justify-end">
-              <Link href="/login" className="text-sm font-medium text-primary hover:underline">{M ? "अधिकारी प्रवेश" : "Officer Login"}</Link>
               <a href="https://bhulekh.mahabhumi.gov.in" target="_blank" rel="noopener noreferrer" className="text-sm text-muted hover:text-foreground">{M ? "महाभूलेख ७/१२" : "Mahabhulekh 7/12"}</a>
               <a href="https://aaplesarkar.mahaonline.gov.in" target="_blank" rel="noopener noreferrer" className="text-sm text-muted hover:text-foreground">{M ? "आपले सरकार" : "Aaple Sarkar"}</a>
               <a href="https://igrmaharashtra.gov.in" target="_blank" rel="noopener noreferrer" className="text-sm text-muted hover:text-foreground">IGR</a>
+              <Link href="/login" className="text-sm font-medium text-primary hover:underline">{M ? "अधिकारी प्रवेश" : "Officer Login"}</Link>
             </div>
             <p className="mt-4 text-xs text-muted">
               © {new Date().getFullYear()} {M ? "महाराष्ट्र शासन, महसूल विभाग." : "Government of Maharashtra, Revenue Department."}
