@@ -122,6 +122,30 @@ h1, h2, h3, h4, h5, h6 { line-height: 1.45; }
 /* Large tap targets for field usage */
 button, [role="button"], input, select, textarea { min-height: 2.5rem; }
 
+/* Smooth in-page navigation (anchor jumps) */
+html { scroll-behavior: smooth; }
+
+/* ── Homepage motion ─────────────────────────────────────────
+   Kinetic gradient headline + slow aurora drift. Both are pure CSS
+   so they cost nothing on the main thread and stop under reduced-motion. */
+@keyframes ms-gradient-pan {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.ms-kinetic {
+  background-size: 220% auto;
+  animation: ms-gradient-pan 7s ease-in-out infinite;
+}
+@keyframes ms-aurora-drift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  33%  { transform: translate3d(2%, -2%, 0) scale(1.06); }
+  66%  { transform: translate3d(-2%, 1%, 0) scale(1.03); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+.ms-aurora { animation: ms-aurora-drift 20s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  html { scroll-behavior: auto; }
+  .ms-kinetic, .ms-aurora { animation: none !important; }
 }

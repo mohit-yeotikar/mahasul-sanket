@@ -2,20 +2,28 @@
 
 // Public CITIZEN homepage. Content is written for ordinary people getting
 // information & services — not the officer workflow. Officer features live in a
-// small separate strip. Modern bento layout, government identity + leadership.
+// small separate strip.
+//
+// Folds: hero (chatbox centerpiece) → leadership → impact stats → service bento
+// → campaign → citizen benefits → officer strip → footer. Every card grid holds
+// an EVEN number of tiles (bento 8, benefits 4, stats 6). Motion via framer-
+// motion + CSS, all reduced-motion aware.
 
 import Link from "next/link";
 import {
   LogIn, FileText, Map, ClipboardList, Sprout, FileSignature, Building2, Stamp,
-  HandCoins, ShieldCheck, ArrowRight, ArrowUpRight, BadgeCheck, Mic, Languages,
+  HandCoins, ArrowRight, ArrowUpRight, BadgeCheck, Mic, Languages,
   Clock, Megaphone, LayoutDashboard, Sparkles,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui";
 import { useLang } from "@/lib/i18n/LanguageProvider";
 import { LangToggle } from "@/features/auth/components/LangToggle";
+import { Reveal, Stagger, StaggerItem } from "@/components/motion";
 import { Leadership } from "./Leadership";
 import { PublicChat } from "./PublicChat";
+import { ImpactStats } from "./ImpactStats";
+import { MaharashtraSilhouette } from "./MaharashtraSilhouette";
 
 type Service = {
   icon: React.ComponentType<{ className?: string }>;
@@ -64,7 +72,7 @@ export function LandingPage() {
       </div>
 
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
           <Logo />
           <div className="flex items-center gap-2">
@@ -80,136 +88,165 @@ export function LandingPage() {
         </div>
       </header>
 
-      <Leadership />
-
-      {/* Hero */}
+      {/* ── Fold 1 — Hero ─────────────────────────────────────── */}
       <section className="relative overflow-hidden">
+        {/* layered backdrop: aurora mesh + dot grid + state silhouette */}
         <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
-          <div className="absolute inset-0 bg-[radial-gradient(75%_60%_at_50%_-10%,rgba(63,148,100,0.22),transparent_70%)]" />
-          <div className="absolute inset-0 opacity-40 [background-image:radial-gradient(rgba(26,92,56,0.09)_1px,transparent_1px)] [background-size:24px_24px]" />
+          <div className="ms-aurora absolute -top-48 left-1/2 h-[44rem] w-[44rem] -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(63,148,100,0.30),transparent_60%)] blur-3xl" />
+          <div className="ms-aurora absolute -top-16 right-[6%] h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle_at_center,rgba(224,123,0,0.12),transparent_62%)] blur-3xl" style={{ animationDelay: "-7s" }} />
+          <div className="ms-aurora absolute top-16 left-[2%] h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle_at_center,rgba(26,92,56,0.20),transparent_62%)] blur-3xl" style={{ animationDelay: "-13s" }} />
+          <div className="absolute inset-0 opacity-60 [background-image:radial-gradient(rgba(26,92,56,0.10)_1px,transparent_1px)] [background-size:26px_26px] [mask-image:radial-gradient(90%_60%_at_50%_0%,#000,transparent_78%)]" />
+          <MaharashtraSilhouette className="absolute right-[-10%] top-6 h-[26rem] w-auto text-primary/[0.05] sm:right-[-2%] sm:h-[32rem]" />
         </div>
-        <div className="mx-auto max-w-3xl px-4 pb-12 pt-12 text-center">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3.5 py-1.5 text-xs font-semibold text-primary">
-            <Sparkles className="h-3.5 w-3.5" aria-hidden />
-            {M ? "नागरिकांसाठी · मोफत · मराठीत" : "For citizens · Free · in Marathi"}
-          </div>
-          <h1 className="text-[2rem] font-extrabold leading-[1.15] tracking-tight sm:text-[3rem]">
-            {M ? "महसूल सेवांची माहिती," : "Land & revenue answers,"}
-            <br className="hidden sm:block" />
-            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              {M ? " तुमच्या भाषेत, क्षणात" : " in your language, instantly"}
-            </span>
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl text-base text-muted sm:text-lg">
-            {M
-              ? "७/१२, फेरफार, वारस नोंद, दाखले, पीक पाहणी — AI ला मराठीत विचारा किंवा खालील सेवा थेट वापरा."
-              : "7/12, mutation, inheritance, certificates, crop entry — ask the AI in Marathi, or use a service below directly."}
-          </p>
 
-          <div className="mt-9">
+        <div className="mx-auto max-w-3xl px-4 pb-14 pt-14 text-center sm:pt-20">
+          <Reveal>
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3.5 py-1.5 text-xs font-semibold text-primary shadow-sm backdrop-blur">
+              <Sparkles className="h-3.5 w-3.5" aria-hidden />
+              {M ? "नागरिकांसाठी · मोफत · मराठीत" : "For citizens · Free · in Marathi"}
+            </div>
+          </Reveal>
+
+          <Reveal delay={0.06}>
+            <h1 className="text-[2.05rem] font-extrabold leading-[1.14] tracking-tight sm:text-[3.25rem]">
+              {M ? "महसूल सेवांची माहिती," : "Land & revenue answers,"}
+              <br className="hidden sm:block" />
+              <span className="ms-kinetic bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">
+                {M ? " तुमच्या भाषेत, क्षणात" : " in your language, instantly"}
+              </span>
+            </h1>
+          </Reveal>
+
+          <Reveal delay={0.12}>
+            <p className="mx-auto mt-4 max-w-xl text-base text-muted sm:text-lg">
+              {M
+                ? "७/१२, फेरफार, वारस नोंद, दाखले, पीक पाहणी — AI ला मराठीत विचारा किंवा खालील सेवा थेट वापरा."
+                : "7/12, mutation, inheritance, certificates, crop entry — ask the AI in Marathi, or use a service below directly."}
+            </p>
+          </Reveal>
+
+          <Reveal delay={0.18} className="mt-9">
             <PublicChat />
-          </div>
+          </Reveal>
 
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-medium text-muted">
-            <span className="inline-flex items-center gap-1.5"><BadgeCheck className="h-4 w-4 text-primary" aria-hidden />{M ? "अधिकृत माहिती" : "Official info"}</span>
-            <span className="inline-flex items-center gap-1.5"><Mic className="h-4 w-4 text-primary" aria-hidden />{M ? "मराठी आवाज" : "Marathi voice"}</span>
-            <span className="inline-flex items-center gap-1.5"><Clock className="h-4 w-4 text-primary" aria-hidden />{M ? "मोफत · लॉगिनशिवाय" : "Free · no login"}</span>
-          </div>
+          <Reveal delay={0.26}>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-medium text-muted">
+              <span className="inline-flex items-center gap-1.5"><BadgeCheck className="h-4 w-4 text-primary" aria-hidden />{M ? "अधिकृत माहिती" : "Official info"}</span>
+              <span className="inline-flex items-center gap-1.5"><Mic className="h-4 w-4 text-primary" aria-hidden />{M ? "मराठी आवाज" : "Marathi voice"}</span>
+              <span className="inline-flex items-center gap-1.5"><Clock className="h-4 w-4 text-primary" aria-hidden />{M ? "मोफत · लॉगिनशिवाय" : "Free · no login"}</span>
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* Quick services — bento */}
+      {/* ── Fold 2 — Leadership ───────────────────────────────── */}
+      <Leadership />
+
+      {/* ── Impact stats band (GOAL 2) ────────────────────────── */}
+      <ImpactStats />
+
+      {/* ── Quick services — bento ────────────────────────────── */}
       <section className="mx-auto w-full max-w-6xl px-4 py-12">
-        <div className="mb-8 text-center">
+        <Reveal className="mb-8 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{M ? "सेवा" : "Services"}</p>
           <h2 className="mt-1 text-2xl font-bold sm:text-3xl">{M ? "तुम्हाला काय हवं आहे?" : "What do you need?"}</h2>
-        </div>
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        </Reveal>
+        <Stagger className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4" gap={0.06} amount={0.1}>
           {SERVICES.map((s) => {
             const inner = (
               <>
-                <div className={`flex items-center justify-center rounded-xl transition-colors ${s.wide ? "h-12 w-12 bg-white/15 text-white" : "h-11 w-11 bg-gradient-to-br from-primary/15 to-secondary/10 text-primary group-hover:from-primary group-hover:to-secondary group-hover:text-primary-fg"}`}>
+                <div className={`flex items-center justify-center rounded-2xl transition-colors ${s.wide ? "h-12 w-12 bg-white/15 text-white" : "h-11 w-11 bg-gradient-to-br from-primary/15 to-secondary/10 text-primary group-hover:from-primary group-hover:to-secondary group-hover:text-primary-fg"}`}>
                   <s.icon className="h-5 w-5" aria-hidden />
                 </div>
                 <div className="mt-3 flex items-start gap-1.5">
                   <h3 className={`font-semibold leading-snug ${s.wide ? "text-lg text-white" : ""}`}>{M ? s.mr : s.en}</h3>
-                  {s.url ? <ArrowUpRight className={`mt-0.5 h-4 w-4 shrink-0 ${s.wide ? "text-white/80" : "text-muted group-hover:text-primary"}`} aria-hidden />
-                    : <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-muted group-hover:translate-x-0.5 group-hover:text-primary" aria-hidden />}
+                  {s.url ? <ArrowUpRight className={`mt-0.5 h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 ${s.wide ? "text-white/80" : "text-muted group-hover:text-primary"}`} aria-hidden />
+                    : <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-muted transition-transform group-hover:translate-x-0.5 group-hover:text-primary" aria-hidden />}
                 </div>
                 <p className={`mt-1 text-sm ${s.wide ? "text-white/85" : "text-muted"}`}>{M ? s.dmr : s.den}</p>
               </>
             );
-            const cls = `group flex h-full flex-col rounded-2xl border p-5 text-left transition-all hover:-translate-y-1 ${
-              s.wide ? "col-span-2 border-transparent bg-gradient-to-br from-primary to-secondary shadow-lg hover:shadow-xl"
-                     : "border-border bg-surface hover:border-primary/30 hover:shadow-md"
+            const cls = `group flex h-full w-full flex-col rounded-3xl border p-5 text-left transition-all duration-300 hover:-translate-y-1 ${
+              s.wide ? "border-transparent bg-gradient-to-br from-primary to-secondary shadow-lg shadow-primary/20 hover:shadow-xl"
+                     : "border-border bg-surface/70 backdrop-blur hover:border-primary/30 hover:shadow-lg"
             }`;
-            return s.url ? (
-              <a key={s.en} href={s.url} target="_blank" rel="noopener noreferrer" className={cls}>{inner}</a>
-            ) : (
-              <button key={s.en} onClick={() => ask(s.ask!)} className={cls}>{inner}</button>
+            return (
+              <StaggerItem key={s.en} className={s.wide ? "col-span-2" : ""}>
+                {s.url ? (
+                  <a href={s.url} target="_blank" rel="noopener noreferrer" className={cls}>{inner}</a>
+                ) : (
+                  <button onClick={() => ask(s.ask!)} className={cls}>{inner}</button>
+                )}
+              </StaggerItem>
             );
           })}
-        </div>
+        </Stagger>
       </section>
 
       {/* Campaign announcement */}
       <section className="mx-auto w-full max-w-6xl px-4 pb-4">
-        <div className="flex flex-col items-start gap-4 rounded-2xl border border-accent/25 bg-accent-soft p-5 sm:flex-row sm:items-center">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent">
-            <Megaphone className="h-5 w-5" aria-hidden />
+        <Reveal>
+          <div className="flex flex-col items-start gap-4 rounded-3xl border border-accent/25 bg-accent-soft p-5 shadow-sm sm:flex-row sm:items-center">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-accent/15 text-accent">
+              <Megaphone className="h-5 w-5" aria-hidden />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-foreground">
+                {M ? "छत्रपती शिवाजी महाराज महाराजस्व अभियान" : "Chhatrapati Shivaji Maharaj Maharajaswa Abhiyan"}
+              </p>
+              <p className="mt-0.5 text-sm text-muted">
+                {M ? "गावोगावी महसूल सेवा शिबिरे — दाखले, फेरफार, सातबारा दुरुस्ती एकाच ठिकाणी." : "Village-level revenue service camps — certificates, mutations and 7/12 corrections in one place."}
+              </p>
+            </div>
+            <Button variant="accent" size="sm" className="shrink-0" onClick={() => ask("छत्रपती शिवाजी महाराज महाराजस्व अभियान म्हणजे काय आणि त्यात कोणत्या सेवा मिळतात?")}>
+              {M ? "अधिक विचारा" : "Ask more"}
+            </Button>
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold text-foreground">
-              {M ? "छत्रपती शिवाजी महाराज महाराजस्व अभियान" : "Chhatrapati Shivaji Maharaj Maharajaswa Abhiyan"}
-            </p>
-            <p className="mt-0.5 text-sm text-muted">
-              {M ? "गावोगावी महसूल सेवा शिबिरे — दाखले, फेरफार, सातबारा दुरुस्ती एकाच ठिकाणी." : "Village-level revenue service camps — certificates, mutations and 7/12 corrections in one place."}
-            </p>
-          </div>
-          <Button variant="accent" size="sm" className="shrink-0" onClick={() => ask("छत्रपती शिवाजी महाराज महाराजस्व अभियान म्हणजे काय आणि त्यात कोणत्या सेवा मिळतात?")}>
-            {M ? "अधिक विचारा" : "Ask more"}
-          </Button>
-        </div>
+        </Reveal>
       </section>
 
-      {/* Why */}
+      {/* Why — citizen benefits */}
       <section className="mx-auto w-full max-w-6xl px-4 py-14">
-        <div className="mb-9 text-center">
+        <Reveal className="mb-9 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{M ? "फायदे" : "Why"}</p>
           <h2 className="mt-1 text-2xl font-bold sm:text-3xl">{M ? "का महसूल संकेत?" : "Why Mahasul Sanket?"}</h2>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        </Reveal>
+        <Stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" gap={0.07} amount={0.15}>
           {BENEFITS.map((b) => (
-            <div key={b.ten} className="rounded-2xl border border-border bg-surface p-6">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <b.icon className="h-5 w-5" aria-hidden />
+            <StaggerItem key={b.ten}>
+              <div className="group h-full rounded-3xl border border-border bg-surface/70 p-6 backdrop-blur transition-all hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/10 transition-colors group-hover:bg-primary group-hover:text-primary-fg">
+                  <b.icon className="h-5 w-5" aria-hidden />
+                </div>
+                <h3 className="mt-4 font-semibold">{M ? b.tmr : b.ten}</h3>
+                <p className="mt-1.5 text-sm text-muted">{M ? b.dmr : b.den}</p>
               </div>
-              <h3 className="mt-4 font-semibold">{M ? b.tmr : b.ten}</h3>
-              <p className="mt-1.5 text-sm text-muted">{M ? b.dmr : b.den}</p>
-            </div>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       </section>
 
       {/* Officer strip (separate, compact) */}
       <section className="mx-auto w-full max-w-6xl px-4 pb-16">
-        <div className="flex flex-col items-center justify-between gap-4 rounded-2xl border border-border bg-surface-2/50 p-6 text-center sm:flex-row sm:text-left">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <LayoutDashboard className="h-5 w-5" aria-hidden />
+        <Reveal>
+          <div className="flex flex-col items-center justify-between gap-4 rounded-3xl border border-border bg-surface-2/50 p-6 text-center sm:flex-row sm:text-left">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <LayoutDashboard className="h-5 w-5" aria-hidden />
+              </div>
+              <div>
+                <p className="font-semibold">{M ? "शासकीय अधिकारी आहात?" : "Are you a government officer?"}</p>
+                <p className="text-sm text-muted">
+                  {M ? "तलाठी ते जिल्हा प्रशासन — डॅशबोर्ड, तिकीट प्रणाली व राज्यस्तरीय विश्लेषण." : "Talathi to District admin — dashboards, ticketing & state-wide analytics."}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="font-semibold">{M ? "शासकीय अधिकारी आहात?" : "Are you a government officer?"}</p>
-              <p className="text-sm text-muted">
-                {M ? "तलाठी ते जिल्हा प्रशासन — डॅशबोर्ड, तिकीट प्रणाली व राज्यस्तरीय विश्लेषण." : "Talathi to District admin — dashboards, ticketing & state-wide analytics."}
-              </p>
+            <div className="flex shrink-0 gap-2">
+              <Link href="/login"><Button size="sm"><LogIn className="h-4 w-4" aria-hidden />{M ? "प्रवेश" : "Sign in"}</Button></Link>
+              <Link href="/register"><Button size="sm" variant="outline">{M ? "नोंदणी" : "Register"}</Button></Link>
             </div>
           </div>
-          <div className="flex shrink-0 gap-2">
-            <Link href="/login"><Button size="sm"><LogIn className="h-4 w-4" aria-hidden />{M ? "प्रवेश" : "Sign in"}</Button></Link>
-            <Link href="/register"><Button size="sm" variant="outline">{M ? "नोंदणी" : "Register"}</Button></Link>
-          </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* Footer */}
