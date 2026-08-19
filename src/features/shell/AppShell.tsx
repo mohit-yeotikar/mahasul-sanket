@@ -5,8 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, MessageSquareText, BookOpen, Ticket as TicketIcon,
-  ShieldCheck, Users, BarChart3, Bell, Settings, ScrollText, Menu, X,
-  Moon, Sun, Contrast, LogOut, Landmark, UserRound, LayoutGrid, Phone,
+  ShieldCheck, Users, BarChart3, Settings, ScrollText, Menu, X,
+  Moon, Sun, Contrast, LogOut, Landmark, UserRound, LayoutGrid, Phone, SlidersHorizontal,
 } from "lucide-react";
 import { Button, cn } from "@/components/ui";
 import { useLang } from "@/lib/i18n/LanguageProvider";
@@ -41,6 +41,7 @@ const NAV: NavItem[] = [
   { href: "/admin", labelKey: "adminPanel", icon: Users, roles: ["district_admin", "state_admin", "super_admin", "dco"] },
   { href: "/reports", labelKey: "reports", icon: BarChart3, roles: ["dco", "district_admin", "state_admin", "super_admin"] },
   { href: "/audit", labelKey: "auditLogs", icon: ScrollText, roles: ["district_admin", "state_admin", "super_admin"] },
+  { href: "/ai-settings", labelKey: "aiSettings", icon: SlidersHorizontal, roles: ["state_admin", "super_admin"] },
   { href: "/settings", labelKey: "settings", icon: Settings, roles: STAFF },
 ];
 

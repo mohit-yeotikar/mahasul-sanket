@@ -42,6 +42,7 @@ const dict = {
   officers: { mr: "क्षेत्रातील अधिकारी", en: "Area Officers" },
   notifications: { mr: "सूचना", en: "Notifications" },
   settings: { mr: "सेटिंग्ज", en: "Settings" },
+  aiSettings: { mr: "AI सेटिंग्ज", en: "AI Settings" },
   profile: { mr: "प्रोफाइल", en: "Profile" },
   auditLogs: { mr: "लेखापरीक्षण नोंदी", en: "Audit Logs" },
   // Chat

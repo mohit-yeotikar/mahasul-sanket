@@ -9,7 +9,7 @@
 // Vercel from every device.
 // ============================================================
 
-import type { AIProvider, ChatMessage } from "./provider";
+import type { AIProvider, ChatMessage, ChatOpts } from "./provider";
 import { createAdminClient } from "@/lib/supabase/server";
 
 // Verified against https://auth.x.ai/.well-known/openid-configuration.
@@ -90,15 +90,15 @@ async function getAccessToken(): Promise<string> {
 export class GrokOAuthProvider implements AIProvider {
   private model = process.env.AI_CHAT_MODEL || "grok-4";
 
-  async chat(messages: ChatMessage[], opts?: { json?: boolean }): Promise<string> {
+  async chat(messages: ChatMessage[], opts?: ChatOpts): Promise<string> {
     const token = await getAccessToken();
     const res = await fetch(`${API_BASE}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({
-        model: this.model,
+        model: opts?.model || this.model,
         messages,
-        temperature: 0.2,
+        temperature: opts?.temperature ?? 0.2,
         response_format: opts?.json ? { type: "json_object" } : undefined,
       }),
     });

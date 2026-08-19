@@ -7,14 +7,22 @@
 // ============================================================
 
 import { GrokOAuthProvider } from "./grok-oauth";
+import { getAISettings } from "./settings";
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
 }
 
+/** Per-call overrides — model/temperature come from runtime AI settings. */
+export interface ChatOpts {
+  json?: boolean;
+  model?: string;
+  temperature?: number;
+}
+
 export interface AIProvider {
-  chat(messages: ChatMessage[], opts?: { json?: boolean }): Promise<string>;
+  chat(messages: ChatMessage[], opts?: ChatOpts): Promise<string>;
   embed(text: string): Promise<number[]>;
 }
 
@@ -30,7 +38,7 @@ class GeminiProvider implements AIProvider {
   // transient provider hiccup.
   private fallbackModels = ["gemini-3-flash-preview", "gemini-flash-lite-latest"];
 
-  async chat(messages: ChatMessage[], opts?: { json?: boolean }): Promise<string> {
+  async chat(messages: ChatMessage[], opts?: ChatOpts): Promise<string> {
     const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n");
     const contents = messages
       .filter((m) => m.role !== "system")
@@ -40,14 +48,15 @@ class GeminiProvider implements AIProvider {
       contents,
       systemInstruction: system ? { parts: [{ text: system }] } : undefined,
       generationConfig: {
-        temperature: 0.2,
+        temperature: opts?.temperature ?? 0.2,
         maxOutputTokens: 8192,
         responseMimeType: opts?.json ? "application/json" : "text/plain",
       },
       _model: model,
     });
 
-    const models = [this.chatModel, ...this.fallbackModels.filter((m) => m !== this.chatModel)];
+    const primary = opts?.model || this.chatModel;
+    const models = [primary, ...this.fallbackModels.filter((m) => m !== primary)];
     let lastError = "";
 
     for (const model of models) {
@@ -101,14 +110,14 @@ class OpenAICompatibleProvider implements AIProvider {
   private chatModel = process.env.AI_CHAT_MODEL!;
   private embedModel = process.env.AI_EMBEDDING_MODEL!;
 
-  async chat(messages: ChatMessage[], opts?: { json?: boolean }): Promise<string> {
+  async chat(messages: ChatMessage[], opts?: ChatOpts): Promise<string> {
     const res = await fetch(`${this.base}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${this.key}` },
       body: JSON.stringify({
-        model: this.chatModel,
+        model: opts?.model || this.chatModel,
         messages,
-        temperature: 0.2,
+        temperature: opts?.temperature ?? 0.2,
         response_format: opts?.json ? { type: "json_object" } : undefined,
       }),
     });
@@ -178,4 +187,52 @@ export function getEmbedProvider(): AIProvider {
 /** @deprecated use getChatProvider() / getEmbedProvider(). Kept for callers that only chat. */
 export function getAIProvider(): AIProvider {
   return getChatProvider();
+}
+
+// Provider instance cached by name so runtime provider switches (from the
+// admin AI-settings UI) rebuild only when the provider actually changes.
+let configuredKey = "";
+let configuredProvider: AIProvider | null = null;
+
+export interface ConfiguredChat {
+  provider: AIProvider;
+  /** model + temperature to pass into provider.chat(); undefined model = provider default. */
+  model?: string;
+  temperature: number;
+  confidenceThreshold: number;
+}
+
+/**
+ * Ping a provider/model with a tiny prompt — used by the AI-settings UI's
+ * "Test connection" so an admin can validate a config BEFORE saving it live.
+ */
+export async function pingChat(
+  providerName: string,
+  model?: string,
+  temperature?: number
+): Promise<string> {
+  const p = build(providerName);
+  return p.chat(
+    [{ role: "user", content: 'Reply with exactly: OK' }],
+    { model: model || undefined, temperature: temperature ?? 0.2 }
+  );
+}
+
+/**
+ * Chat provider + generation params resolved from runtime AI settings
+ * (admin-editable) with env fallback. Use this in the answering pipeline so the
+ * Super Admin can switch provider/model/temperature without a redeploy.
+ */
+export async function getConfiguredChat(): Promise<ConfiguredChat> {
+  const s = await getAISettings();
+  if (configuredKey !== s.provider || !configuredProvider) {
+    configuredProvider = build(s.provider);
+    configuredKey = s.provider;
+  }
+  return {
+    provider: configuredProvider,
+    model: s.chat_model || undefined,
+    temperature: s.temperature,
+    confidenceThreshold: s.confidence_threshold,
+  };
 }

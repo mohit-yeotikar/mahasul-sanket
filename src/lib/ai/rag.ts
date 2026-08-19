@@ -1,4 +1,4 @@
-import { getChatProvider, getEmbedProvider } from "./provider";
+import { getConfiguredChat, getEmbedProvider } from "./provider";
 import { createAdminClient } from "@/lib/supabase/server";
 import type { ChatAnswer, Citation } from "@/types";
 
@@ -136,7 +136,7 @@ export async function answerQuestion(
   history: { role: "user" | "assistant"; content: string }[] = [],
   audience: "officer" | "citizen" = "officer"
 ): Promise<ChatAnswer> {
-  const chat = getChatProvider();
+  const { provider: chat, model, temperature, confidenceThreshold } = await getConfiguredChat();
   const db = createAdminClient();
 
   // ── Tier 1+2: pure-Postgres keyword search (no AI) ──
@@ -213,7 +213,7 @@ export async function answerQuestion(
           : `QUESTION: ${question}`,
       },
     ],
-    { json: true }
+    { json: true, model, temperature }
   );
 
   const parsed = parseModelJson(raw, !!chunks?.length);
@@ -221,7 +221,7 @@ export async function answerQuestion(
   const used = new Set(parsed.used_chunks ?? []);
   const citations: Citation[] = toCitations(chunks, used);
 
-  const threshold = Number(process.env.AI_CONFIDENCE_THRESHOLD ?? 60);
+  const threshold = confidenceThreshold;
   const confidence = Math.max(0, Math.min(100, Math.round(parsed.confidence ?? 0)));
 
   return {
