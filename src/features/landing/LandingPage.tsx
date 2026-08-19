@@ -137,6 +137,16 @@ export function LandingPage() {
               <span className="inline-flex items-center gap-1.5"><Clock className="h-4 w-4 text-primary" aria-hidden />{M ? "मोफत · लॉगिनशिवाय" : "Free · no login"}</span>
             </div>
           </Reveal>
+
+          <Reveal delay={0.32}>
+            <Link
+              href="/tools"
+              className="mt-6 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-fg"
+            >
+              {M ? "तुमचा तलाठी शोधा · कागदपत्रे · योजना पात्रता" : "Find your Talathi · documents · scheme eligibility"}
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </Reveal>
         </div>
       </section>
 
