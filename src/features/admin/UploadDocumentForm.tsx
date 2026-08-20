@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Upload } from "lucide-react";
-import { Button, Card, Field, Input, Select, Spinner, Textarea } from "@/components/ui";
+import { Button, Card, Field, Input, Select, Spinner } from "@/components/ui";
 import { useLang } from "@/lib/i18n/LanguageProvider";
 
 export function UploadDocumentForm() {
@@ -47,11 +47,18 @@ export function UploadDocumentForm() {
       const res = await fetch("/api/ingest", { method: "POST", body: form });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+      // When embeddings are unavailable, the doc is still stored + keyword-
+      // searchable — surface that instead of silently degrading.
+      const keywordOnly = typeof data.embedded === "number" && data.embedded < data.chunks;
       setMessage({
         ok: true,
         text: lang === "mr"
-          ? `यशस्वी! ${data.chunks} भाग तयार झाले. मंजुरीनंतर AI ला उपलब्ध होईल.`
-          : `Done! ${data.chunks} chunks created. Available to AI after approval.`,
+          ? `यशस्वी! ${data.chunks} भाग तयार झाले. मंजुरीनंतर AI ला उपलब्ध होईल.${
+              keywordOnly ? " (एम्बेडिंग सध्या उपलब्ध नाही — कीवर्ड शोध कार्यरत; GEMINI_API_KEY तपासा.)" : ""
+            }`
+          : `Done! ${data.chunks} chunks created. Available to AI after approval.${
+              keywordOnly ? " (Embeddings unavailable — keyword search works; check GEMINI_API_KEY.)" : ""
+            }`,
       });
       setFile(null);
       router.refresh();

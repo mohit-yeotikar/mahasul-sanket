@@ -32,20 +32,44 @@ export function chunkText(text: string, maxChars = 1400, overlap = 200): string[
   return chunks.filter((c) => c.length > 30);
 }
 
-/** Embed and store chunks for a document. Marks it pending_approval when done. */
+/**
+ * Embed and store chunks for a document. Marks it pending_approval when done.
+ *
+ * Resilient by design: if the embedding provider is unavailable (e.g. an
+ * invalid/expired API key or a rate-limit), chunks are still stored WITHOUT a
+ * vector. They stay fully keyword-searchable (search_knowledge_keyword uses the
+ * `content` column, not embeddings), so an upload never hard-fails just because
+ * embeddings are down. Vectors can be back-filled later once the key is valid.
+ */
 export async function ingestDocumentText(
   documentId: string,
   pages: { text: string; page: number | null }[]
-): Promise<{ chunks: number }> {
+): Promise<{ chunks: number; embedded: number }> {
   const ai = getEmbedProvider();
   const db = createAdminClient();
 
   await db.from("document_chunks").delete().eq("document_id", documentId);
 
   let index = 0;
+  let embedded = 0;
+  let embeddingsUp = true; // flips to false on the first hard embed failure
+
   for (const { text, page } of pages) {
     for (const content of chunkText(text)) {
-      const embedding = await ai.embed(content);
+      let embedding: number[] | null = null;
+      if (embeddingsUp) {
+        try {
+          embedding = await ai.embed(content);
+          embedded++;
+        } catch (e) {
+          // Store remaining chunks keyword-only and stop retrying embeddings.
+          embeddingsUp = false;
+          console.error(
+            "Embeddings unavailable — storing chunks keyword-only:",
+            e instanceof Error ? e.message : e
+          );
+        }
+      }
       const { error } = await db.from("document_chunks").insert({
         document_id: documentId,
         chunk_index: index++,
@@ -64,5 +88,5 @@ export async function ingestDocumentText(
     .eq("id", documentId)
     .eq("status", "processing");
 
-  return { chunks: index };
+  return { chunks: index, embedded };
 }

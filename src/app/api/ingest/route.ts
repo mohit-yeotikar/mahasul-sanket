@@ -103,18 +103,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. Chunk + embed + store
-    const { chunks } = await ingestDocumentText(doc.id, pages);
+    // 4. Chunk + embed + store (embeddings degrade gracefully if unavailable)
+    const { chunks, embedded } = await ingestDocumentText(doc.id, pages);
 
     await admin.from("audit_logs").insert({
       actor_id: user.id,
       action: "document.uploaded",
       entity: "documents",
       entity_id: doc.id,
-      detail: { title: meta.title, chunks },
+      detail: { title: meta.title, chunks, embedded },
     });
 
-    return NextResponse.json({ ok: true, documentId: doc.id, chunks });
+    return NextResponse.json({ ok: true, documentId: doc.id, chunks, embedded });
   } catch (e) {
     await admin.from("documents").update({ status: "rejected", summary: "Processing failed" }).eq("id", doc.id);
     return NextResponse.json(
