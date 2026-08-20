@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Badge, Button, Card, Spinner } from "@/components/ui";
 import { useLang } from "@/lib/i18n/LanguageProvider";
 import { reviewDocumentAction } from "./actions";
+import { DuplicateCheck } from "./DuplicateCheck";
 
 interface Doc {
   id: string;
@@ -29,12 +30,13 @@ export function DocumentApprovalRow({ doc }: { doc: Doc }) {
 
   return (
     <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
-      <div>
+      <div className="min-w-0 flex-1">
         <p className="font-medium">{doc.title}</p>
         <p className="text-sm text-muted">
           <Badge tone="primary">{doc.doc_type}</Badge>
           {doc.gr_number && <span className="ml-2">GR: {doc.gr_number}</span>}
         </p>
+        <div className="mt-2"><DuplicateCheck text={doc.title} excludeDocId={doc.id} /></div>
         {error && <p className="text-sm text-danger">{error}</p>}
       </div>
       <div className="flex gap-2">

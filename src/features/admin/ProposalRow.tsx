@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button, Card, Spinner } from "@/components/ui";
 import { useLang } from "@/lib/i18n/LanguageProvider";
 import { reviewProposalAction } from "./actions";
+import { DuplicateCheck } from "./DuplicateCheck";
 
 interface Proposal {
   id: string;
@@ -34,6 +35,7 @@ export function ProposalRow({ proposal }: { proposal: Proposal }) {
       </p>
       <p className="font-medium">❓ {proposal.question}</p>
       <p className="whitespace-pre-wrap text-sm">💬 {proposal.answer}</p>
+      <DuplicateCheck text={proposal.question} />
       {error && <p className="text-sm text-danger">{error}</p>}
       <div className="flex gap-2 pt-1">
         <Button variant="secondary" size="sm" disabled={pending} onClick={() => act(true)}>
