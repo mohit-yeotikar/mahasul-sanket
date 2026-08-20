@@ -44,6 +44,7 @@ const dict = {
   settings: { mr: "सेटिंग्ज", en: "Settings" },
   aiSettings: { mr: "AI सेटिंग्ज", en: "AI Settings" },
   grievances: { mr: "नागरिक तक्रारी", en: "Grievances" },
+  knowledgeGaps: { mr: "ज्ञान त्रुटी", en: "Knowledge Gaps" },
   profile: { mr: "प्रोफाइल", en: "Profile" },
   auditLogs: { mr: "लेखापरीक्षण नोंदी", en: "Audit Logs" },
   // Chat
