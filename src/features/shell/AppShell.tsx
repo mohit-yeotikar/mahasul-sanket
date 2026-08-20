@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, MessageSquareText, BookOpen, Ticket as TicketIcon,
   ShieldCheck, Users, BarChart3, Settings, ScrollText, Menu, X,
-  Moon, Sun, Contrast, LogOut, Landmark, UserRound, LayoutGrid, Phone, SlidersHorizontal, Megaphone, FileWarning, Activity,
+  Moon, Sun, Contrast, LogOut, Landmark, UserRound, LayoutGrid, Phone, SlidersHorizontal, Megaphone, FileWarning, Activity, UserCog,
 } from "lucide-react";
 import { Button, cn } from "@/components/ui";
 import { useLang } from "@/lib/i18n/LanguageProvider";
@@ -40,6 +40,7 @@ const NAV: NavItem[] = [
   { href: "/dco", labelKey: "dcoPanel", icon: ShieldCheck, roles: ["nayab_tahsildar", "dco", "district_admin", "state_admin", "super_admin"] },
   { href: "/grievances", labelKey: "grievances", icon: Megaphone, roles: ["nayab_tahsildar", "dco", "district_admin", "state_admin", "super_admin"] },
   { href: "/admin", labelKey: "adminPanel", icon: Users, roles: ["district_admin", "state_admin", "super_admin", "dco"] },
+  { href: "/users", labelKey: "users", icon: UserCog, roles: ["district_admin", "state_admin", "super_admin"] },
   { href: "/knowledge-gaps", labelKey: "knowledgeGaps", icon: FileWarning, roles: ["dco", "district_admin", "state_admin", "super_admin"] },
   { href: "/officer-performance", labelKey: "officerPerformance", icon: Activity, roles: ["dco", "district_admin", "state_admin", "super_admin"] },
   { href: "/reports", labelKey: "reports", icon: BarChart3, roles: ["dco", "district_admin", "state_admin", "super_admin"] },

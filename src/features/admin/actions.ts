@@ -170,5 +170,31 @@ export async function setRoleAction(userId: string, role: string): Promise<Resul
     entity: "profiles", entity_id: userId, detail: { role },
   });
   revalidatePath("/admin");
+  revalidatePath("/users");
+  return { ok: true };
+}
+
+/* ── Admin suspends / reactivates a user account ── */
+export async function setUserStatusAction(userId: string, status: string): Promise<Result> {
+  const actor = await getActor();
+  if (!actor) return { ok: false, error: "Unauthorized" };
+  if (!["district_admin", "state_admin", "super_admin"].includes(actor.role)) {
+    return { ok: false, error: "Only Admin can change account status." };
+  }
+  if (!["active", "suspended"].includes(status)) return { ok: false, error: "Invalid status" };
+  if (userId === actor.id) return { ok: false, error: "You cannot change your own status." };
+
+  const admin = createAdminClient();
+  if (actor.role === "district_admin") {
+    const { data: target } = await admin.from("profiles").select("district_id").eq("id", userId).single();
+    if (target?.district_id !== actor.district_id) return { ok: false, error: "Other district." };
+  }
+  const { error } = await admin.from("profiles").update({ status }).eq("id", userId);
+  if (error) return { ok: false, error: "Update failed" };
+  await admin.from("audit_logs").insert({
+    actor_id: actor.id, action: "user.status_changed",
+    entity: "profiles", entity_id: userId, detail: { status },
+  });
+  revalidatePath("/users");
   return { ok: true };
 }

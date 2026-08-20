@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
-import { Card } from "@/components/ui";
+import { AuditLog, type AuditRow } from "@/features/admin/AuditLog";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "लेखापरीक्षण | महसूल संकेत" };
 
 export default async function AuditPage() {
@@ -9,26 +10,25 @@ export default async function AuditPage() {
     .from("audit_logs")
     .select("id,action,entity,entity_id,created_at,actor:profiles(full_name,role)")
     .order("created_at", { ascending: false })
-    .limit(100);
+    .limit(500);
+
+  const rows: AuditRow[] = (logs ?? []).map((l) => {
+    const actor = l.actor as unknown as { full_name?: string; role?: string } | null;
+    return {
+      id: l.id as number,
+      created_at: l.created_at as string,
+      action: l.action as string,
+      entity: (l.entity as string) ?? null,
+      entity_id: (l.entity_id as string) ?? null,
+      actor_name: actor?.full_name ?? "system",
+      actor_role: actor?.role ?? null,
+    };
+  });
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4">
+    <div className="mx-auto max-w-4xl space-y-5">
       <h1 className="text-2xl font-bold">लेखापरीक्षण नोंदी / Audit Logs</h1>
-      <Card className="divide-y divide-border">
-        {!logs?.length && <p className="p-6 text-center text-sm text-muted">नोंदी नाहीत.</p>}
-        {logs?.map((l) => (
-          <div key={l.id} className="flex flex-wrap items-center gap-2 p-3 text-sm">
-            <span className="font-mono text-xs text-muted">
-              {new Date(l.created_at).toLocaleString("mr-IN")}
-            </span>
-            <span className="font-medium">
-              {(l.actor as { full_name?: string } | null)?.full_name ?? "system"}
-            </span>
-            <span className="rounded bg-surface-2 px-2 py-0.5 font-mono text-xs">{l.action}</span>
-            <span className="text-muted">{l.entity}</span>
-          </div>
-        ))}
-      </Card>
+      <AuditLog logs={rows} />
     </div>
   );
 }
