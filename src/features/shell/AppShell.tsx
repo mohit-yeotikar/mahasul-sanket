@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, MessageSquareText, BookOpen, Ticket as TicketIcon,
   ShieldCheck, Users, BarChart3, Settings, ScrollText, Menu, X,
-  Moon, Sun, Contrast, LogOut, Landmark, UserRound, LayoutGrid, Phone, SlidersHorizontal, Megaphone, FileWarning, Activity, UserCog, Radio,
+  Moon, Sun, Contrast, LogOut, Landmark, UserRound, LayoutGrid, Phone, SlidersHorizontal, Megaphone, FileWarning, Activity, UserCog, Radio, FileSignature,
 } from "lucide-react";
 import { Button, cn } from "@/components/ui";
 import { useLang } from "@/lib/i18n/LanguageProvider";
@@ -35,6 +35,7 @@ const NAV: NavItem[] = [
   { href: "/chat", labelKey: "aiChat", icon: MessageSquareText },
   { href: "/officers", labelKey: "officers", icon: Phone, roles: ["citizen", "talathi", "circle_officer"] },
   { href: "/knowledge", labelKey: "knowledgeBase", icon: BookOpen, roles: STAFF },
+  { href: "/draft", labelKey: "draftGenerator", icon: FileSignature, roles: STAFF },
   { href: "/seva", labelKey: "seva", icon: LayoutGrid },
   { href: "/tickets", labelKey: "tickets", icon: TicketIcon, roles: STAFF },
   { href: "/dco", labelKey: "dcoPanel", icon: ShieldCheck, roles: ["nayab_tahsildar", "dco", "district_admin", "state_admin", "super_admin"] },

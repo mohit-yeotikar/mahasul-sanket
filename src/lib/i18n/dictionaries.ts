@@ -47,6 +47,7 @@ const dict = {
   knowledgeGaps: { mr: "ज्ञान त्रुटी", en: "Knowledge Gaps" },
   officerPerformance: { mr: "अधिकारी कामगिरी", en: "Officer Performance" },
   announcements: { mr: "घोषणा", en: "Announcements" },
+  draftGenerator: { mr: "मसुदा जनरेटर", en: "Draft Generator" },
   profile: { mr: "प्रोफाइल", en: "Profile" },
   auditLogs: { mr: "लेखापरीक्षण नोंदी", en: "Audit Logs" },
   // Chat
