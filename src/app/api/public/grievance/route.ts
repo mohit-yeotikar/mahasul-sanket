@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
 import { rateLimit } from "@/lib/rate-limit";
+import { isFeatureEnabled } from "@/lib/feature-flags";
 
 const CATEGORIES = [
   "mutation", "seven_twelve", "ferfar", "crop_entry", "inheritance",
@@ -25,6 +26,9 @@ function ipOf(req: NextRequest) {
 
 // Submit a grievance (no login).
 export async function POST(req: NextRequest) {
+  if (!(await isFeatureEnabled("grievances"))) {
+    return NextResponse.json({ error: "तक्रार नोंदणी सध्या बंद आहे. / Grievance submission is currently disabled." }, { status: 503 });
+  }
   if (!rateLimit(`grievance-submit:${ipOf(req)}`, 6, 60_000)) {
     return NextResponse.json({ error: "Too many requests. Please wait a minute." }, { status: 429 });
   }

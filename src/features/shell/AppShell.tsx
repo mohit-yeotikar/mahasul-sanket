@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, MessageSquareText, BookOpen, Ticket as TicketIcon,
   ShieldCheck, Users, BarChart3, Settings, ScrollText, Menu, X,
-  Moon, Sun, Contrast, LogOut, Landmark, UserRound, LayoutGrid, Phone, SlidersHorizontal, Megaphone, FileWarning, Activity, UserCog, Radio, FileSignature,
+  Moon, Sun, Contrast, LogOut, Landmark, UserRound, LayoutGrid, Phone, SlidersHorizontal, Megaphone, FileWarning, Activity, UserCog, Radio, FileSignature, CircleDot, Gauge, ToggleLeft,
 } from "lucide-react";
 import { Button, cn } from "@/components/ui";
 import { useLang } from "@/lib/i18n/LanguageProvider";
@@ -38,6 +38,7 @@ const NAV: NavItem[] = [
   { href: "/draft", labelKey: "draftGenerator", icon: FileSignature, roles: STAFF },
   { href: "/seva", labelKey: "seva", icon: LayoutGrid },
   { href: "/tickets", labelKey: "tickets", icon: TicketIcon, roles: STAFF },
+  { href: "/circle", labelKey: "circleOverview", icon: CircleDot, roles: ["circle_officer", "nayab_tahsildar", "dco", "district_admin", "state_admin", "super_admin"] },
   { href: "/dco", labelKey: "dcoPanel", icon: ShieldCheck, roles: ["nayab_tahsildar", "dco", "district_admin", "state_admin", "super_admin"] },
   { href: "/grievances", labelKey: "grievances", icon: Megaphone, roles: ["nayab_tahsildar", "dco", "district_admin", "state_admin", "super_admin"] },
   { href: "/announcements", labelKey: "announcements", icon: Radio, roles: STAFF },
@@ -47,7 +48,9 @@ const NAV: NavItem[] = [
   { href: "/officer-performance", labelKey: "officerPerformance", icon: Activity, roles: ["dco", "district_admin", "state_admin", "super_admin"] },
   { href: "/reports", labelKey: "reports", icon: BarChart3, roles: ["dco", "district_admin", "state_admin", "super_admin"] },
   { href: "/audit", labelKey: "auditLogs", icon: ScrollText, roles: ["district_admin", "state_admin", "super_admin"] },
+  { href: "/state", labelKey: "stateQuality", icon: Gauge, roles: ["state_admin", "super_admin"] },
   { href: "/ai-settings", labelKey: "aiSettings", icon: SlidersHorizontal, roles: ["state_admin", "super_admin"] },
+  { href: "/feature-flags", labelKey: "featureFlags", icon: ToggleLeft, roles: ["super_admin"] },
   { href: "/settings", labelKey: "settings", icon: Settings, roles: STAFF },
 ];
 

@@ -6,12 +6,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { answerQuestion } from "@/lib/ai/rag";
 import { rateLimit } from "@/lib/rate-limit";
+import { isFeatureEnabled } from "@/lib/feature-flags";
 
 export const runtime = "nodejs";
 
 const bodySchema = z.object({ question: z.string().min(2).max(2000) });
 
 export async function POST(req: NextRequest) {
+  if (!(await isFeatureEnabled("public_chat"))) {
+    return NextResponse.json(
+      { error: "ही सेवा सध्या उपलब्ध नाही. / This service is temporarily unavailable." },
+      { status: 503 }
+    );
+  }
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "anon";
   if (!rateLimit(`public-chat:${ip}`, 8, 60_000)) {
     return NextResponse.json(

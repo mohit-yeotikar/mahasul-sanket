@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { generateDraft } from "@/lib/ai/draft";
 import { rateLimit } from "@/lib/rate-limit";
+import { isFeatureEnabled } from "@/lib/feature-flags";
 
 const STAFF = ["talathi", "circle_officer", "nayab_tahsildar", "dco", "district_admin", "state_admin", "super_admin"];
 const bodySchema = z.object({
@@ -16,6 +17,9 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   if (!me || !STAFF.includes(me.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!(await isFeatureEnabled("draft_generator"))) {
+    return NextResponse.json({ error: "मसुदा जनरेटर सध्या बंद आहे. / Draft generator is currently disabled." }, { status: 503 });
+  }
   if (!rateLimit(`draft:${user.id}`, 12, 60_000)) {
     return NextResponse.json({ error: "Too many requests. Please wait a minute." }, { status: 429 });
   }

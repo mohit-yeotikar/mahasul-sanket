@@ -48,6 +48,9 @@ const dict = {
   officerPerformance: { mr: "अधिकारी कामगिरी", en: "Officer Performance" },
   announcements: { mr: "घोषणा", en: "Announcements" },
   draftGenerator: { mr: "मसुदा जनरेटर", en: "Draft Generator" },
+  circleOverview: { mr: "मंडळ आढावा", en: "Circle Overview" },
+  stateQuality: { mr: "राज्य AI गुणवत्ता", en: "State AI Quality" },
+  featureFlags: { mr: "फीचर फ्लॅग्ज", en: "Feature Flags" },
   profile: { mr: "प्रोफाइल", en: "Profile" },
   auditLogs: { mr: "लेखापरीक्षण नोंदी", en: "Audit Logs" },
   // Chat
