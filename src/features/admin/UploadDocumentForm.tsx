@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { Upload } from "lucide-react";
 import { Button, Card, Field, Input, Select, Spinner } from "@/components/ui";
 import { useLang } from "@/lib/i18n/LanguageProvider";
+import { ocrImage, ocrPdf } from "@/lib/ocr-client";
 
 export function UploadDocumentForm() {
   const { lang, t } = useLang();
@@ -15,6 +16,8 @@ export function UploadDocumentForm() {
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [ocrProgress, setOcrProgress] = useState<number>();
+  const [ocrStage, setOcrStage] = useState<string>();
+  const [pdfOcr, setPdfOcr] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string }>();
   const [meta, setMeta] = useState({
     title: "", docType: "gr", grNumber: "", circularNumber: "",
@@ -22,6 +25,7 @@ export function UploadDocumentForm() {
   });
 
   const isImage = file?.type.startsWith("image/");
+  const isPdf = file?.type === "application/pdf" || !!file?.name.toLowerCase().endsWith(".pdf");
 
   const submit = async () => {
     if (!file || !meta.title) return;
@@ -31,16 +35,20 @@ export function UploadDocumentForm() {
       const form = new FormData();
       Object.entries(meta).forEach(([k, v]) => v && form.append(k, v));
 
+      // Free, unlimited, Marathi-capable OCR in the browser (Tesseract mar+eng).
       if (isImage) {
-        // Scanned document: OCR in the browser (free) with Marathi + English
-        const { default: Tesseract } = await import("tesseract.js");
-        const result = await Tesseract.recognize(file, "mar+eng", {
-          logger: (m) => {
-            if (m.status === "recognizing text") setOcrProgress(Math.round(m.progress * 100));
-          },
-        });
-        form.append("ocrText", result.data.text);
+        setOcrStage(lang === "mr" ? "प्रतिमा वाचत आहे…" : "Reading image…");
+        form.append("ocrText", await ocrImage(file, setOcrProgress));
         setOcrProgress(undefined);
+        setOcrStage(undefined);
+      } else if (isPdf && pdfOcr) {
+        const text = await ocrPdf(file, (page, total, pct) => {
+          setOcrProgress(pct);
+          setOcrStage((lang === "mr" ? "पृष्ठ" : "Page") + ` ${page}/${total}`);
+        });
+        form.append("ocrText", text);
+        setOcrProgress(undefined);
+        setOcrStage(undefined);
       }
       form.append("file", file);
 
@@ -66,6 +74,8 @@ export function UploadDocumentForm() {
       setMessage({ ok: false, text: e instanceof Error ? e.message : "Upload failed" });
     } finally {
       setBusy(false);
+      setOcrProgress(undefined);
+      setOcrStage(undefined);
     }
   };
 
@@ -111,13 +121,27 @@ export function UploadDocumentForm() {
         <Input
           type="file"
           accept=".pdf,.docx,.md,.markdown,.txt,.csv,.tsv,.html,.htm,.json,.log,image/png,image/jpeg"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          onChange={(e) => { setFile(e.target.files?.[0] ?? null); setPdfOcr(false); }}
           className="pt-2"
         />
       </Field>
 
+      {isPdf && (
+        <label className="flex items-start gap-2 rounded-lg border border-border bg-surface-2/40 p-3 text-sm">
+          <input type="checkbox" className="mt-1" checked={pdfOcr} onChange={(e) => setPdfOcr(e.target.checked)} />
+          <span>
+            <span className="font-medium">{lang === "mr" ? "स्कॅन केलेली PDF — OCR ने वाचा (मराठी)" : "Scanned PDF — read with OCR (Marathi)"}</span>
+            <span className="mt-0.5 block text-xs text-muted">
+              {lang === "mr"
+                ? "मजकूर-थर नसलेल्या (फोटोकॉपी/स्कॅन) PDF साठी. ब्राउझरमध्ये मोफत — API की लागत नाही."
+                : "For PDFs with no text layer (photocopies/scans). Free, in-browser — no API key needed."}
+            </span>
+          </span>
+        </label>
+      )}
+
       {ocrProgress !== undefined && (
-        <p className="text-sm text-muted">OCR: {ocrProgress}%…</p>
+        <p className="text-sm text-muted">OCR{ocrStage ? ` · ${ocrStage}` : ""}: {ocrProgress}%…</p>
       )}
       {message && (
         <p role="alert" className={`rounded-lg p-3 text-sm ${message.ok ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}`}>
